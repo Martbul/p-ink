@@ -1,116 +1,78 @@
-"use client";
-import { useState } from "react";
 import Link from "next/link";
-import { AuthLayout } from "@/components/layout/AuthLayout";
-import { Button, Input } from "@/components/ui";
+import { FrameMiniMockup } from "@/components/frame/FrameMiniMockup";
 
-export default function SignUpPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+interface AuthLayoutProps {
+  children: React.ReactNode;
+  quote?: string;
+  quoteAttr?: string;
+  showFrame?: boolean;
+}
 
-  function validate() {
-    const e: Record<string, string> = {};
-    if (!name.trim()) e.name = "Name is required";
-    if (!email.includes("@")) e.email = "Enter a valid email";
-    if (password.length < 8)
-      e.password = "Password must be at least 8 characters";
-    return e;
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    setLoading(true);
-    // TODO: call POST /api/auth/register
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    // On success: router.push("/onboarding/pair")
-  }
-
+export function AuthLayout({
+  children,
+  quote = "Distance means so little when someone means so much.",
+  quoteAttr = "— Tom McNeal",
+  showFrame = false,
+}: AuthLayoutProps) {
   return (
-    <AuthLayout showFrame quote="" quoteAttr="">
-      <div className="animate-fade-up">
-        <h1 className="font-display text-5xl font-light text-deep mb-2">
-          Create your <em className="italic text-terra">account.</em>
-        </h1>
-        <p
-          className="text-base text-muted mb-10 leading-relaxed"
-          style={{ fontWeight: 300 }}
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      {/* Left — dark decorative panel */}
+      <div
+        className="relative hidden lg:flex flex-col justify-between p-16 overflow-hidden"
+        style={{ background: "var(--deep)" }}
+      >
+        {/* Radial glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 30% 60%, rgba(196,113,74,0.14) 0%, transparent 70%)",
+          }}
+        />
+
+        <Link
+          href="/"
+          className="relative font-display text-2xl font-light text-cream"
         >
-          One of you sets up the account and pairs the frame, then invites their
-          partner.
-        </p>
+          love
+          <em className="italic" style={{ color: "var(--terra)" }}>
+            frame
+          </em>
+        </Link>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Input
-            label="Your name"
-            placeholder="Sofia"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={errors.name}
-            autoComplete="name"
-          />
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            autoComplete="email"
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="At least 8 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={errors.password}
-            hint="Min 8 characters"
-            autoComplete="new-password"
-          />
+        <div className="relative">
+          {showFrame ? (
+            <FrameMiniMockup size="lg" />
+          ) : (
+            <>
+              <p
+                className="font-display text-4xl font-light italic leading-snug mb-4"
+                style={{ color: "var(--cream)", opacity: 0.9 }}
+              >
+                "{quote}"
+              </p>
+              <p
+                className="text-sm tracking-wide"
+                style={{ color: "var(--muted)" }}
+              >
+                {quoteAttr}
+              </p>
+            </>
+          )}
+        </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            full
-            loading={loading}
-            className="mt-2"
-          >
-            Create account & set up frame
-          </Button>
-        </form>
-
-        <p className="text-xs text-muted mt-5 text-center leading-relaxed">
-          By creating an account you agree to our{" "}
-          <a href="#" className="hover:text-terra underline">
-            Terms
-          </a>{" "}
-          and{" "}
-          <a href="#" className="hover:text-terra underline">
-            Privacy Policy
-          </a>
-          .
-        </p>
-
-        <p className="text-sm text-muted mt-6 text-center">
-          Already have an account?{" "}
-          <Link
-            href="/auth/login"
-            className="text-terra font-normal hover:underline"
-          >
-            Sign in
-          </Link>
+        <p
+          className="relative text-xs tracking-widest uppercase"
+          style={{ color: "var(--muted)" }}
+        >
+          © 2025 loveframe
         </p>
       </div>
-    </AuthLayout>
+
+      {/* Right — form panel */}
+      <div className="flex items-center justify-center px-8 py-16 bg-cream">
+        <div className="w-full max-w-md">{children}</div>
+      </div>
+    </div>
   );
 }

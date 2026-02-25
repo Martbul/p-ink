@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { OnboardingLayout } from "@/components/layout/OnboardingLayout";
 import { Button } from "@/components/ui";
 
 export default function InvitePartnerPage() {
@@ -29,7 +28,6 @@ export default function InvitePartnerPage() {
   }
 
   return (
-    <OnboardingLayout step={1}>
       {/* Icon */}
       <div
         className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
@@ -172,6 +170,5 @@ export default function InvitePartnerPage() {
           </Button>
         </Link>
       </div>
-    </OnboardingLayout>
   );
 }

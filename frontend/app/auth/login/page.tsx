@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button, Input, Divider } from "@/components/ui";
 
 export default function LoginPage() {
@@ -23,7 +22,6 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout>
       <div className="animate-fade-up">
         <h1 className="font-display text-5xl font-light text-deep mb-2">
           Welcome <em className="italic text-terra">back.</em>
@@ -94,6 +92,5 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-    </AuthLayout>
   );
 }

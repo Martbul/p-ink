@@ -1,7 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { OnboardingLayout } from "@/components/layout/OnboardingLayout";
 import { Button } from "@/components/ui";
 
 export default function PairFramePage() {
@@ -55,7 +54,6 @@ export default function PairFramePage() {
   }
 
   return (
-    <OnboardingLayout step={0}>
       {/* Icon */}
       <div
         className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
@@ -131,6 +129,5 @@ export default function PairFramePage() {
           </Button>
         </Link>
       </div>
-    </OnboardingLayout>
   );
 }
