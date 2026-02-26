@@ -1,1 +1,0 @@
-//  WiFi creds, API URL, pin defs, poll 

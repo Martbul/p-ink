@@ -1,1 +1,2 @@
-.env
+# PlatformIO build & toolchain cache
+.pio/
