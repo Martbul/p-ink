@@ -749,7 +749,7 @@ void loop()
 // # Entry point: setup() and loop()
 
 // /**
-//  * LoveFrame — ESP32-S3 E-Ink Display Firmware
+//  * p-ink — ESP32-S3 E-Ink Display Firmware
 //  * Board:   ESP32-S3-DevKitC-1-N16R8 (16 MB flash, 8 MB OPI PSRAM)
 //  * Display: Waveshare 7.5" V2 — 800×480, black/white
 //  *
@@ -810,7 +810,7 @@ void loop()
 // // Leave blank to force BLE provisioning on first boot.
 // #define DEFAULT_WIFI_SSID     ""
 // #define DEFAULT_WIFI_PASS     ""
-// #define DEFAULT_API_BASE_URL  "https://api.loveframe.app"
+// #define DEFAULT_API_BASE_URL  "https://api.p-ink.app"
 
 // // Power mode: 0 = deep sleep, 1 = light sleep, 2 = active (no sleep)
 // #define POWER_MODE  0
@@ -869,7 +869,7 @@ void loop()
 // // ═══════════════════════════════════════════════════════════════════════════════
 // //  LOGGING HELPERS
 // // ═══════════════════════════════════════════════════════════════════════════════
-// #define LF_TAG "LoveFrame"
+// #define LF_TAG "p-ink"
 // #define LOGI(fmt, ...) log_i("[" LF_TAG "] " fmt, ##__VA_ARGS__)
 // #define LOGE(fmt, ...) log_e("[" LF_TAG "] " fmt, ##__VA_ARGS__)
 // #define LOGW(fmt, ...) log_w("[" LF_TAG "] " fmt, ##__VA_ARGS__)
@@ -893,7 +893,7 @@ void loop()
 // // ═══════════════════════════════════════════════════════════════════════════════
 
 // void loadConfig() {
-//   prefs.begin("loveframe", true);  // read-only
+//   prefs.begin("p-ink", true);  // read-only
 //   g_wifiSsid = prefs.getString("wifi_ssid", DEFAULT_WIFI_SSID);
 //   g_wifiPass = prefs.getString("wifi_pass", DEFAULT_WIFI_PASS);
 //   g_apiBase  = prefs.getString("api_base",  DEFAULT_API_BASE_URL);
@@ -903,7 +903,7 @@ void loop()
 // }
 
 // void saveConfig(const String& ssid, const String& pass, const String& api) {
-//   prefs.begin("loveframe", false);  // read-write
+//   prefs.begin("p-ink", false);  // read-write
 //   prefs.putString("wifi_ssid", ssid);
 //   prefs.putString("wifi_pass", pass);
 //   prefs.putString("api_base",  api);
@@ -912,7 +912,7 @@ void loop()
 // }
 
 // void savePollInterval(uint32_t ms) {
-//   prefs.begin("loveframe", false);
+//   prefs.begin("p-ink", false);
 //   prefs.putUInt("poll_ms", ms);
 //   prefs.end();
 // }
@@ -1021,7 +1021,7 @@ void loop()
 //   http.setTimeout(HTTP_TIMEOUT_MS);
 //   http.addHeader("Content-Type",  "application/json");
 //   http.addHeader("X-Device-Mac",  g_mac);
-//   http.addHeader("User-Agent",    "LoveFrame/" FIRMWARE_VERSION);
+//   http.addHeader("User-Agent",    "p-ink/" FIRMWARE_VERSION);
 
 //   JsonDocument body;
 //   body["mac"]      = g_mac;
@@ -1231,7 +1231,7 @@ void loop()
 //   HTTPClient http;
 //   http.begin(imageUrl);
 //   http.setTimeout(HTTP_TIMEOUT_MS);
-//   http.addHeader("User-Agent", "LoveFrame/" FIRMWARE_VERSION);
+//   http.addHeader("User-Agent", "p-ink/" FIRMWARE_VERSION);
 
 //   int code = http.GET();
 //   if (code != 200) {
@@ -1328,14 +1328,14 @@ void loop()
 
 //   // Show the MAC address on screen so the user can pair via the web app
 //   String line2 = g_mac;
-//   showStatus("Setup needed", line2.c_str(), "See loveframe.app/setup");
+//   showStatus("Setup needed", line2.c_str(), "See p-ink.app/setup");
 
 //   // Poll a fallback AP or wait for user to set up via serial
 //   // For now: check if credentials were written to NVS externally
 //   // (e.g. via a companion app or web setup tool)
 //   for (int i = 0; i < 30; i++) {
 //     delay(2000);
-//     prefs.begin("loveframe", true);
+//     prefs.begin("p-ink", true);
 //     String ssid = prefs.getString("wifi_ssid", "");
 //     prefs.end();
 //     if (!ssid.isEmpty()) {
@@ -1358,7 +1358,7 @@ void loop()
 //   delay(300);
 
 //   rtc_bootCount++;
-//   LOGI("=== LoveFrame v%s  boot #%lu ===", FIRMWARE_VERSION, (unsigned long)rtc_bootCount);
+//   LOGI("=== p-ink v%s  boot #%lu ===", FIRMWARE_VERSION, (unsigned long)rtc_bootCount);
 //   LOGI("Heap: %lu free  PSRAM: %lu free",
 //        (unsigned long)ESP.getFreeHeap(),
 //        (unsigned long)ESP.getFreePsram());
@@ -1425,7 +1425,7 @@ void loop()
 //   // Not paired yet — show pairing screen
 //   if (!resp.paired) {
 //     LOGI("Device not paired. Showing setup screen.");
-//     showStatus("Almost there!", "Pair at loveframe.app", g_mac.c_str());
+//     showStatus("Almost there!", "Pair at p-ink.app", g_mac.c_str());
 //     enterSleep(g_pollMs);
 //     return;
 //   }

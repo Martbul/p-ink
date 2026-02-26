@@ -62,7 +62,7 @@ export default function SettingsPage() {
   }
 
   async function copyInvite() {
-    await navigator.clipboard.writeText("https://loveframe.app/join/xk92-mf7p");
+    await navigator.clipboard.writeText("https://p-ink.app/join/xk92-mf7p");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -155,7 +155,7 @@ export default function SettingsPage() {
                 style={{ background: "var(--warm)" }}
               >
                 <span className="font-display italic text-sm text-deep truncate">
-                  loveframe.app/join/xk92-mf7p
+                  p-ink.app/join/xk92-mf7p
                 </span>
                 <button
                   onClick={copyInvite}

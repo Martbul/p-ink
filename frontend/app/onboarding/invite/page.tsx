@@ -9,7 +9,7 @@ export default function InvitePartnerPage() {
   const [partnerEmail, setPartnerEmail] = useState("");
   const [sending, setSending] = useState(false);
 
-  const inviteLink = "loveframe.app/join/xk92-mf7p";
+  const inviteLink = "p-ink.app/join/xk92-mf7p";
 
   async function copyLink() {
     await navigator.clipboard.writeText(`https://${inviteLink}`);

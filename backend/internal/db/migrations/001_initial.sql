@@ -1,84 +1,117 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Migration: 001_initial
+-- Run with: psql $DATABASE_URL -f migrations/001_initial.sql
 
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    display_name VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS users (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  clerk_id    TEXT        UNIQUE NOT NULL,
+  email       TEXT        UNIQUE NOT NULL,
+  name        TEXT        NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE devices (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    device_mac_address VARCHAR(50) UNIQUE,
-    pairing_code VARCHAR(10) UNIQUE,
-    firmware_version VARCHAR(20),          -- useful from day one for debugging
-    last_pinged_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS couples (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_a_id   UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_b_id   UUID            NULL REFERENCES users(id) ON DELETE SET NULL,
+  status      TEXT        NOT NULL DEFAULT 'pending',
+  timezone    TEXT        NOT NULL DEFAULT 'UTC',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT different_users CHECK (user_a_id <> user_b_id),
+  CONSTRAINT couple_status   CHECK (status IN ('pending', 'active'))
 );
 
-CREATE TABLE couples (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    partner_a_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    partner_b_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    device_id UUID UNIQUE REFERENCES devices(id) ON DELETE SET NULL,
-    timezone VARCHAR(50) DEFAULT 'UTC',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CHECK (partner_a_id != partner_b_id)   -- prevents a user pairing with themselves
+CREATE TABLE IF NOT EXISTS invite_tokens (
+  token       TEXT        PRIMARY KEY DEFAULT encode(gen_random_bytes(16), 'hex'),
+  couple_id   UUID        NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+  created_by  UUID        NOT NULL REFERENCES users(id),
+  expires_at  TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '7 days'),
+  used_at     TIMESTAMPTZ,
+  used_by     UUID            NULL REFERENCES users(id)
 );
 
-CREATE TABLE prompts (
-    id SERIAL PRIMARY KEY,
-    question_text TEXT NOT NULL,
-    category VARCHAR(50)                   -- 'deep', 'funny', 'memories', etc.
+CREATE TABLE IF NOT EXISTS devices (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  couple_id   UUID            NULL REFERENCES couples(id) ON DELETE SET NULL,
+  mac_address TEXT        UNIQUE NOT NULL,
+  label       TEXT,
+  last_seen   TIMESTAMPTZ,
+  firmware    TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE photo_queue (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    couple_id UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
-    uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    is_used BOOLEAN DEFAULT FALSE,
-    used_at TIMESTAMP WITH TIME ZONE,                          -- when it was consumed
-    used_in_entry_id UUID,                                     -- FK added after daily_entries is created
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE UNIQUE INDEX IF NOT EXISTS one_device_per_user ON devices (owner_id);
+
+CREATE TABLE IF NOT EXISTS content (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  couple_id    UUID        NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
+  sent_by      UUID        NOT NULL REFERENCES users(id),
+  sent_to      UUID        NOT NULL REFERENCES users(id),
+  type         TEXT        NOT NULL,
+  storage_key  TEXT            NULL,
+  message_text TEXT            NULL,
+  caption      TEXT,
+  status       TEXT        NOT NULL DEFAULT 'queued',
+  displayed_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT sent_by_ne_sent_to CHECK (sent_by <> sent_to),
+  CONSTRAINT content_type_check CHECK (type IN ('photo', 'message', 'drawing')),
+  CONSTRAINT content_status_check CHECK (status IN ('queued', 'displayed', 'archived')),
+  CONSTRAINT photo_has_key    CHECK (type <> 'photo'   OR storage_key   IS NOT NULL),
+  CONSTRAINT drawing_has_key  CHECK (type <> 'drawing' OR storage_key   IS NOT NULL),
+  CONSTRAINT message_has_text CHECK (type <> 'message' OR message_text  IS NOT NULL)
 );
 
-CREATE TABLE daily_entries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    couple_id UUID NOT NULL REFERENCES couples(id) ON DELETE CASCADE,
-    prompt_id INTEGER NOT NULL REFERENCES prompts(id),
-    photo_id UUID REFERENCES photo_queue(id),
-    assigned_date DATE NOT NULL,
-    completed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(couple_id, assigned_date)
+CREATE INDEX IF NOT EXISTS content_sent_to_status ON content (sent_to, status, created_at);
+
+CREATE TABLE IF NOT EXISTS frame_state (
+  device_id    UUID        PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
+  content_id   UUID            NULL REFERENCES content(id) ON DELETE SET NULL,
+  image_url    TEXT        NOT NULL,
+  image_hash   TEXT        NOT NULL,
+  composed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL
 );
 
-ALTER TABLE photo_queue
-    ADD CONSTRAINT fk_photo_used_in_entry
-    FOREIGN KEY (used_in_entry_id) REFERENCES daily_entries(id) ON DELETE SET NULL;
-
-CREATE TABLE answers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    daily_entry_id UUID NOT NULL REFERENCES daily_entries(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    answer_text TEXT NOT NULL,
-    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(daily_entry_id, user_id)
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint     TEXT        NOT NULL,
+  p256dh       TEXT        NOT NULL,
+  auth         TEXT        NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (user_id, endpoint)
 );
 
-CREATE TABLE display_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
-    daily_entry_id UUID REFERENCES daily_entries(id) ON DELETE SET NULL,
-    served_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    image_url TEXT                         -- snapshot of what was generated and sent
-);
+CREATE OR REPLACE VIEW device_display AS
+SELECT
+  d.id           AS device_id,
+  d.mac_address,
+  d.owner_id,
+  d.couple_id,
+  fs.image_url,
+  fs.image_hash,
+  fs.expires_at,
+  fs.content_id,
+  d.firmware,
+  (c.status = 'active') AS couple_active
+FROM devices d
+LEFT JOIN frame_state fs ON fs.device_id = d.id
+LEFT JOIN couples c      ON c.id = d.couple_id;
 
-CREATE INDEX idx_couples_device         ON couples(device_id);
-CREATE INDEX idx_couples_partner_a      ON couples(partner_a_id);
-CREATE INDEX idx_couples_partner_b      ON couples(partner_b_id);
-CREATE INDEX idx_daily_entries_couple   ON daily_entries(couple_id, assigned_date);
-CREATE INDEX idx_photo_queue_unused     ON photo_queue(couple_id) WHERE is_used = FALSE;
-CREATE INDEX idx_answers_entry          ON answers(daily_entry_id);
-CREATE INDEX idx_display_log_device     ON display_log(device_id, served_at DESC);
+CREATE OR REPLACE VIEW next_content AS
+SELECT
+  c.*,
+  u_by.name AS sender_name,
+  u_to.name AS recipient_name
+FROM content c
+JOIN users u_by ON u_by.id = c.sent_by
+JOIN users u_to ON u_to.id = c.sent_to
+WHERE c.status = 'queued'
+ORDER BY c.created_at ASC;
+
+COMMIT;

@@ -1,4 +1,4 @@
-# LoveFrame — Backend
+# p-ink — Backend
 
 > **Go HTTP server that owns all the logic, content, and image composition.**
 
@@ -136,7 +136,7 @@ Returns: { "token": "jwt", "user": {...} }
 ```
 POST /api/couple/invite
 Auth: required
-Returns: { "invite_url": "https://loveframe.app/join/xk92-mf7p", "expires_at": "..." }
+Returns: { "invite_url": "https://p-ink.app/join/xk92-mf7p", "expires_at": "..." }
 
 POST /api/couple/join
 Auth: required
@@ -243,13 +243,13 @@ The final image is encoded as a 24-bit Windows BMP (not PNG — BMP needs no dec
 ### Environment variables
 
 ```env
-DATABASE_URL=postgres://user:pass@localhost/loveframe
+DATABASE_URL=postgres://user:pass@localhost/p-ink
 JWT_SECRET=your-secret-key
-S3_BUCKET=loveframe-assets
+S3_BUCKET=p-ink-assets
 S3_ENDPOINT=https://s3.amazonaws.com       # or R2 endpoint
 S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
-S3_PUBLIC_BASE=https://cdn.loveframe.app   # public URL prefix for BMP files
+S3_PUBLIC_BASE=https://cdn.p-ink.app   # public URL prefix for BMP files
 VAPID_PRIVATE_KEY=...                       # for push notifications
 VAPID_PUBLIC_KEY=...
 PORT=8080
@@ -302,17 +302,17 @@ The backend is a single statically-linked Go binary. Suggested deployment:
 
 ```bash
 # Build
-GOOS=linux GOARCH=amd64 go build -o loveframe-server ./cmd/server
+GOOS=linux GOARCH=amd64 go build -o p-ink-server ./cmd/server
 
 # Run (e.g. behind nginx or as a systemd service)
-./loveframe-server
+./p-ink-server
 ```
 
 Or containerise with the included Dockerfile:
 
 ```bash
-docker build -t loveframe-backend .
-docker run -p 8080:8080 --env-file .env loveframe-backend
+docker build -t p-ink-backend .
+docker run -p 8080:8080 --env-file .env p-ink-backend
 ```
 
 ---
