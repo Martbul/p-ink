@@ -9,97 +9,191 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cloud.google.com/go/storage"
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/google/uuid"
 )
 
-// Store is the interface your handlers depend on.
+// ─── Interface ────────────────────────────────────────────────────────────────
+
+// Store is the interface all handlers depend on.
 type Store interface {
-	Upload(ctx context.Context, r io.Reader, filename, mimeType, prefix string) (key string, err error)
+	// Upload stores a file and returns (deliveryURL, storageKey, error).
+	// - url: full HTTPS delivery URL (use this in the DB / send to the frame)
+	// - key: Cloudinary public_id (stable reference, use this for Delete/PublicURL)
+	// - prefix: used to group files, typically the couple UUID
+	Upload(ctx context.Context, r io.Reader, filename, mimeType, prefix string) (url, key string, err error)
+
+	// PublicURL reconstructs the delivery URL from a stored key (public_id).
 	PublicURL(key string) string
+
+	// Delete removes an asset by key.
+	// resourceType must match what was used on upload: "image" or "raw".
+	Delete(ctx context.Context, key, resourceType string) error
 }
 
-// ─── GoogleCloudStore ────────────────────────────────────────────────────────
+// ─── CloudinaryStore ──────────────────────────────────────────────────────────
+//
+// Configure with ONE of:
+//
+//   CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name   ← easiest
+//
+//   CLOUDINARY_CLOUD_NAME=...
+//   CLOUDINARY_API_KEY=...
+//   CLOUDINARY_API_SECRET=...
+//
+// Optional:
+//   CLOUDINARY_FOLDER=p-ink   (default: "p-ink")
 
-type GoogleCloudStore struct {
-	client     *storage.Client
-	bucketName string
-	publicBase string
+type CloudinaryStore struct {
+	cld       *cloudinary.Cloudinary
+	cloudName string
+	folder    string
 }
 
-// NewGoogleCloudStore creates a store using Google Cloud Storage (GCS).
-// GCS offers an "Always Free" tier (5GB Storage in us-west1, us-central1, or us-east1).
-func NewGoogleCloudStore(ctx context.Context) (*GoogleCloudStore, error) {
-	bucketName := os.Getenv("GCS_BUCKET")
-	if bucketName == "" {
-		return nil, fmt.Errorf("GCS_BUCKET environment variable must be set")
+func NewCloudinaryStore() (*CloudinaryStore, error) {
+	var (
+		cld *cloudinary.Cloudinary
+		err error
+	)
+
+	if cldURL := os.Getenv("CLOUDINARY_URL"); cldURL != "" {
+		// Style A: single URL  cloudinary://key:secret@cloud
+		cld, err = cloudinary.NewFromURL(cldURL)
+	} else {
+		// Style B: three separate env vars
+		cloudName := os.Getenv("CLOUDINARY_CLOUD_NAME")
+		apiKey    := os.Getenv("CLOUDINARY_API_KEY")
+		apiSecret := os.Getenv("CLOUDINARY_API_SECRET")
+		if cloudName == "" || apiKey == "" || apiSecret == "" {
+			return nil, fmt.Errorf(
+				"set CLOUDINARY_URL or all of CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET",
+			)
+		}
+		cld, err = cloudinary.NewFromParams(cloudName, apiKey, apiSecret)
 	}
-
-	// The client automatically authenticates using the service account JSON file
-	// path defined in the GOOGLE_APPLICATION_CREDENTIALS environment variable.
-	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create gcs client: %w", err)
+		return nil, fmt.Errorf("cloudinary init: %w", err)
 	}
 
-	publicBase := os.Getenv("GCS_PUBLIC_BASE")
-	if publicBase == "" {
-		// Default public URL format for GCS
-		publicBase = fmt.Sprintf("https://storage.googleapis.com/%s", bucketName)
+	folder := os.Getenv("CLOUDINARY_FOLDER")
+	if folder == "" {
+		folder = "p-ink"
 	}
 
-	return &GoogleCloudStore{
-		client:     client,
-		bucketName: bucketName,
-		publicBase: strings.TrimRight(publicBase, "/"),
+	// Read the cloud name back out so PublicURL can build URLs without an SDK call
+	cloudName := cld.Config.Cloud.CloudName
+
+	return &CloudinaryStore{
+		cld:       cld,
+		cloudName: cloudName,
+		folder:    folder,
 	}, nil
 }
 
-func (s *GoogleCloudStore) Upload(ctx context.Context, r io.Reader, filename, mimeType, prefix string) (string, error) {
-	// Determine extension
-	ext := filepath.Ext(filename)
+// Upload streams r to Cloudinary.
+//
+// Resource type:
+//   image/*  → "image"  Cloudinary optimises and CDN-serves it
+//   other    → "raw"    stored verbatim (use this for generated BMP frames)
+//
+// public_id format:  <folder>/content/<prefix>/<uuid>
+// e.g.               p-ink/content/couple-uuid/f47ac10b-58cc-...
+func (s *CloudinaryStore) Upload(
+	ctx context.Context,
+	r io.Reader,
+	filename, mimeType, prefix string,
+) (string, string, error) {
+
+	// Determine file extension
+	ext := strings.TrimPrefix(filepath.Ext(filename), ".")
 	if ext == "" {
-		exts, _ := mime.ExtensionsByType(mimeType)
-		if len(exts) > 0 {
-			ext = exts[0]
+		if exts, _ := mime.ExtensionsByType(mimeType); len(exts) > 0 {
+			ext = strings.TrimPrefix(exts[0], ".")
 		}
 	}
 
-	key := fmt.Sprintf("content/%s/%s%s", prefix, uuid.New().String(), ext)
+	publicID := fmt.Sprintf("%s/content/%s/%s", s.folder, prefix, uuid.New().String())
 
-	// Create a writer attached to the GCS Object
-	obj := s.client.Bucket(s.bucketName).Object(key)
-	writer := obj.NewWriter(ctx)
-	writer.ContentType = mimeType
-
-	// Stream the file upload directly to Google Cloud
-	if _, err := io.Copy(writer, r); err != nil {
-		_ = writer.Close() // prevent memory leak on error
-		return "", fmt.Errorf("failed to write to gcs: %w", err)
+	// Cloudinary resource types: "image", "video", "raw", "auto"
+	resourceType := "image"
+	if !strings.HasPrefix(mimeType, "image/") {
+		resourceType = "raw"
 	}
 
-	// The upload is completed only when the writer is closed
-	if err := writer.Close(); err != nil {
-		return "", fmt.Errorf("failed to close gcs writer: %w", err)
+	resp, err := s.cld.Upload.Upload(ctx, r, uploader.UploadParams{
+		PublicID:       publicID,
+		ResourceType:   resourceType,
+		Format:         ext,
+		UniqueFilename: api.Bool(false), // we already use a UUID
+		Overwrite:      api.Bool(true),
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("cloudinary upload: %w", err)
+	}
+	if resp.Error.Message != "" {
+		return "", "", fmt.Errorf("cloudinary: %s", resp.Error.Message)
 	}
 
-	return key, nil
+	return resp.SecureURL, resp.PublicID, nil
 }
 
-func (s *GoogleCloudStore) PublicURL(key string) string {
-	return s.publicBase + "/" + key
+// PublicURL builds a Cloudinary HTTPS delivery URL from a public_id.
+//
+// URL structure:
+//   image → https://res.cloudinary.com/<cloud>/image/upload/<public_id>
+//   raw   → https://res.cloudinary.com/<cloud>/raw/upload/<public_id>
+//
+// We infer resource type from the ".bmp" suffix because BMP frames are
+// the only "raw" assets we store. Adjust if you add other raw types.
+func (s *CloudinaryStore) PublicURL(key string) string {
+	resourceType := "image"
+	if strings.HasSuffix(strings.ToLower(key), ".bmp") {
+		resourceType = "raw"
+	}
+	return fmt.Sprintf("https://res.cloudinary.com/%s/%s/upload/%s",
+		s.cloudName, resourceType, key)
 }
 
-// ─── NoopStore (development / testing) ───────────────────────────────────────
+// Delete removes a Cloudinary asset.
+// Pass the same resourceType that was used during Upload ("image" or "raw").
+func (s *CloudinaryStore) Delete(ctx context.Context, key, resourceType string) error {
+	if resourceType == "" {
+		resourceType = "image"
+	}
+	resp, err := s.cld.Upload.Destroy(ctx, uploader.DestroyParams{
+		PublicID:     key,
+		ResourceType: resourceType,
+	})
+	if err != nil {
+		return fmt.Errorf("cloudinary delete: %w", err)
+	}
+	if resp.Result != "ok" {
+		return fmt.Errorf("cloudinary delete result: %s", resp.Result)
+	}
+	return nil
+}
+
+// ─── NoopStore ────────────────────────────────────────────────────────────────
+// Used locally when Cloudinary is not configured.
+// Accepts uploads, drains the reader, returns placeholder URLs.
 
 type NoopStore struct{}
 
-func (n *NoopStore) Upload(_ context.Context, _ io.Reader, filename, _, prefix string) (string, error) {
-	key := fmt.Sprintf("content/%s/noop-%s", prefix, filename)
-	fmt.Println("[storage] noop upload:", key)
-	return key, nil
+func (n *NoopStore) Upload(_ context.Context, r io.Reader, filename, _, prefix string) (string, string, error) {
+	_, _ = io.Copy(io.Discard, r) // drain so multipart parsing doesn't stall
+	key := fmt.Sprintf("p-ink/content/%s/noop-%s", prefix, filename)
+	url := "http://localhost:8080/noop/" + key
+	fmt.Printf("[storage:noop] upload  key=%s\n", key)
+	return url, key, nil
 }
 
 func (n *NoopStore) PublicURL(key string) string {
-	return "http://localhost:8080/static/" + key
+	return "http://localhost:8080/noop/" + key
+}
+
+func (n *NoopStore) Delete(_ context.Context, key, _ string) error {
+	fmt.Printf("[storage:noop] delete  key=%s\n", key)
+	return nil
 }

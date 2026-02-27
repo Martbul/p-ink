@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { FrameMiniMockup } from "@/components/frame/FrameMiniMockup";
-
+import { useAuth } from "@clerk/nextjs";
 
 const PROMPTS =[
   "What made you smile today?",
@@ -76,14 +76,20 @@ const FEATURES =[
     desc: "No blue light. Always on. Readable in any light. Calm and beautiful.",
   },
 ];
+
 const HomeNav = () => {
   const [scrolled, setScrolled] = useState(false);
-
+  const { isSignedIn } = useAuth();
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
+    // Wrap the initial assessment in a timeout to avoid synchronous setState inside useEffect
+    const timer = setTimeout(() => handler(), 0);
     window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", handler);
+    };
+  },[]);
 
   return (
     <nav
@@ -115,11 +121,26 @@ const HomeNav = () => {
           Features
         </a>
 
+        {/* {isSignedIn ? (
+          <Link
+            href="/dashboard"
+            className="btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300"
+          >
+            Dashboard
+          </Link>
+        ) : (
+          <Link
+            href="/auth"
+            className="btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300"
+          >
+            Sign in
+          </Link>
+        )} */}
+
         <Link
           href="/auth"
           className={cn(
             "btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300",
-            // Shadows updated to use the new Rose and Deep RGB values
             "shadow-[0_4px_16px_rgba(217,126,139,0.3)] hover:shadow-[0_8px_24px_rgba(74,34,40,0.2)]"
           )}
         >
@@ -131,8 +152,8 @@ const HomeNav = () => {
 };
 
 const PromptCarousel = () => {
-  const [idx, setIdx] = useState(0);
-  const[visible, setVisible] = useState(true);
+  const[idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -153,28 +174,42 @@ const PromptCarousel = () => {
           visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
         )}
       >
-        "{PROMPTS[idx]}"
+        &rdquo;{PROMPTS[idx]}&rdquo;
       </p>
     </div>
   );
 };
 
-const FloatingPetals = () => {
-  const [petals, setPetals] = useState<any[]>([]);
+interface Petal {
+  id: number;
+  x: number;
+  size: number;
+  delay: number;
+  duration: number;
+  opacity: number;
+  isRose: boolean;
+}
 
-  // Calculate random values strictly on mount to prevent SSR hydration errors
+const FloatingPetals = () => {
+  const [petals, setPetals] = useState<Petal[]>([]);
+
+  // Calculate random values asynchronously to prevent SSR hydration errors
+  // while adhering to effect limits
   useEffect(() => {
-    setPetals(
-      Array.from({ length: 18 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        size: 8 + Math.random() * 14,
-        delay: Math.random() * 15,
-        duration: 18 + Math.random() * 12,
-        opacity: 0.15 + Math.random() * 0.25,
-        isRose: Math.random() > 0.5,
-      }))
-    );
+    const timer = setTimeout(() => {
+      setPetals(
+        Array.from({ length: 18 }, (_, i) => ({
+          id: i,
+          x: Math.random() * 100,
+          size: 8 + Math.random() * 14,
+          delay: Math.random() * 15,
+          duration: 18 + Math.random() * 12,
+          opacity: 0.15 + Math.random() * 0.25,
+          isRose: Math.random() > 0.5,
+        }))
+      );
+    }, 0);
+    return () => clearTimeout(timer);
   },[]);
 
   if (petals.length === 0) return null;
@@ -235,7 +270,7 @@ const HeroSection = () => {
           {submitted ? (
             <div className="animate-pop-in bg-rose/10 border border-rose/20 rounded-2xl p-6">
               <p className="font-display text-2xl italic text-rose">
-                You're on the list. We'll be in touch soon ♡
+                You&apos;re on the list. We&apos;ll be in touch soon ♡
               </p>
             </div>
           ) : (
@@ -353,7 +388,7 @@ const FeaturesSection = () => {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center md:text-left mb-20">
-          <p className="text-eyebrow text-blush mb-4">What's inside</p>
+          <p className="text-eyebrow text-blush mb-4">What&apos;s inside</p>
           <h2 className="text-display-lg text-cream">
             Built with <em className="italic text-rose">intention.</em>
           </h2>
@@ -407,20 +442,26 @@ const CtaSection = () => {
 };
 
 const HomeFooter = () => {
+  const [year, setYear] = useState<number>(2026);
+
+  useEffect(() => {
+    // Avoids calling impure function during render
+    const timer = setTimeout(() => setYear(new Date().getFullYear()), 0);
+    return () => clearTimeout(timer);
+  },[]);
+
   return (
     <footer className="px-8 md:px-14 py-10 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-rose/10 bg-cream">
       <span className="font-display text-2xl font-light text-deep">
         p<em className="italic text-rose">-ink</em>
       </span>
       <span className="text-sm font-light text-muted">
-        © {new Date().getFullYear()} p-ink. Made with care for long-distance
-        couples.
+        © {year} p-ink. Made with care for long-distance couples.
       </span>
     </footer>
   );
 };
 
-// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   return (
@@ -428,7 +469,6 @@ export default function HomePage() {
       <HomeNav />
       <HeroSection />
       
-      {/* Subtle division */}
       <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-blush/50 to-transparent max-w-4xl mx-auto" />
       
       <HowItWorks />

@@ -4,12 +4,10 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/yourusername/p-ink/internal/db"
-	"github.com/yourusername/p-ink/internal/middleware"
+	"github.com/martbul/p-ink/internal/db"
+	"github.com/martbul/p-ink/internal/middleware"
 )
 
-// GetMe handles GET /api/users/me
-// Returns the authenticated user's profile and couple status.
 func GetMe(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())

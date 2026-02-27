@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
 import "../styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { UserProvider } from "@/providers/UserProvider";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -39,7 +40,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${instrument.variable}`}>
       <body className="font-body antialiased bg-cream text-ink font-[400] selection:bg-rose/20 selection:text-deep">
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider>
+          <UserProvider>{children}</UserProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	gorilllaHandlers "github.com/gorilla/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -10,16 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	gorilllaHandlers "github.com/gorilla/handlers"
-	"github.com/martbul/p-ink/internal/db"
-
-	clerk "github.com/clerk/clerk-sdk-go/v2"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	// "github.com/yourusername/p-ink/internal/api"
-	// "github.com/yourusername/p-ink/internal/db"
-	// "github.com/yourusername/p-ink/internal/middleware"
-	// "github.com/yourusername/p-ink/internal/storage"
+	"github.com/martbul/p-ink/internal/api"
+	"github.com/martbul/p-ink/internal/db"
+	"github.com/martbul/p-ink/internal/middleware"
+	"github.com/martbul/p-ink/internal/storage"
 )
 
 func main() {
@@ -30,6 +28,7 @@ func main() {
 		log.Fatal("CLERK_SECRET_KEY is required")
 	}
 	clerk.SetKey(clerkKey)
+	jwksClient := middleware.NewJWKSClient(clerkKey)
 
 	ctx := context.Background()
 	pool, err := db.Connect(ctx)
@@ -40,82 +39,70 @@ func main() {
 	log.Println("database connected")
 
 	var store storage.Store
-	s3Store, err := storage.NewS3Store()
+	cldStore, err := storage.NewCloudinaryStore()
 	if err != nil {
-		log.Printf("storage: %v — using NoopStore (uploads disabled)", err)
+		log.Printf("cloudinary not configured (%v) — using NoopStore", err)
 		store = &storage.NoopStore{}
 	} else {
-		store = s3Store
-		log.Println("storage connected")
+		store = cldStore
+		log.Println("cloudinary connected")
 	}
 
 	r := mux.NewRouter()
-
 	r.Use(middleware.Logger)
-	r.Use(middleware.ContentTypeJSON)
 
-	// Health check — used by load balancer / Railway / Render
 	r.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		api.OK(w, map[string]string{"status": "ok"})
 	}).Methods(http.MethodGet)
 
-	// Clerk webhook — must be raw, no JSON middleware messing with the body
 	r.HandleFunc("/api/webhooks/clerk", api.WebhookHandler(pool)).
 		Methods(http.MethodPost)
 
-	// Frame poll — called by the ESP32, no user auth, MAC-based auth
 	r.HandleFunc("/api/frame/poll", api.FramePoll(pool)).
 		Methods(http.MethodPost)
 
-	// Invite info — public so the frontend can show "Alex invited you" before login
 	r.HandleFunc("/api/couples/invite/{token}", api.GetInviteInfo(pool)).
 		Methods(http.MethodGet)
 
-	// ── Authenticated routes ──────────────────────────────────────────────────
-	auth := middleware.RequireAuth(pool)
+	protected := r.PathPrefix("").Subrouter()
+	protected.Use(middleware.ClerkAuthMiddleware(pool, jwksClient))
 
-	// Users
-	r.Handle("/api/users/me", auth(http.HandlerFunc(api.GetMe(pool)))).
+	protected.HandleFunc("/api/users/me", api.GetMe(pool)).
 		Methods(http.MethodGet)
 
-	// Couples
-	r.Handle("/api/couples", auth(http.HandlerFunc(api.CreateCouple(pool)))).
+	protected.HandleFunc("/api/couples", api.CreateCouple(pool)).
 		Methods(http.MethodPost)
-	r.Handle("/api/couples/me", auth(http.HandlerFunc(api.GetCouple(pool)))).
+	protected.HandleFunc("/api/couples/me", api.GetCouple(pool)).
 		Methods(http.MethodGet)
-	r.Handle("/api/couples/me", auth(http.HandlerFunc(api.UpdateCouple(pool)))).
+	protected.HandleFunc("/api/couples/me", api.UpdateCouple(pool)).
 		Methods(http.MethodPatch)
-	r.Handle("/api/couples/invite", auth(http.HandlerFunc(api.CreateInvite(pool)))).
+	protected.HandleFunc("/api/couples/invite", api.CreateInvite(pool)).
 		Methods(http.MethodPost)
-	r.Handle("/api/couples/join", auth(http.HandlerFunc(api.JoinCouple(pool)))).
+	protected.HandleFunc("/api/couples/join", api.JoinCouple(pool)).
 		Methods(http.MethodPost)
 
-	// Devices / Frames
-	r.Handle("/api/devices/pair", auth(http.HandlerFunc(api.PairDevice(pool)))).
+	protected.HandleFunc("/api/devices/pair", api.PairDevice(pool)).
 		Methods(http.MethodPost)
-	r.Handle("/api/devices/me", auth(http.HandlerFunc(api.GetMyDevice(pool)))).
+	protected.HandleFunc("/api/devices/me", api.GetMyDevice(pool)).
 		Methods(http.MethodGet)
 
-	// Content
-	r.Handle("/api/content", auth(http.HandlerFunc(api.ListContent(pool)))).
+	protected.HandleFunc("/api/content", api.ListContent(pool)).
 		Methods(http.MethodGet)
-	r.Handle("/api/content", auth(http.HandlerFunc(api.UploadContent(pool, store)))).
+	protected.HandleFunc("/api/content", api.UploadContent(pool, store)).
 		Methods(http.MethodPost)
-	r.Handle("/api/content/message", auth(http.HandlerFunc(api.SendMessage(pool)))).
+	protected.HandleFunc("/api/content/message", api.SendMessage(pool)).
 		Methods(http.MethodPost)
-	r.Handle("/api/content/{id}", auth(http.HandlerFunc(api.DeleteContent(pool, store)))).
+	protected.HandleFunc("/api/content/{id}", api.DeleteContent(pool, store)).
 		Methods(http.MethodDelete)
 
-	// Push notifications
-	r.Handle("/api/notifications/subscribe", auth(http.HandlerFunc(api.SubscribePush(pool)))).
+	protected.HandleFunc("/api/notifications/subscribe", api.SubscribePush(pool)).
 		Methods(http.MethodPost)
-	r.Handle("/api/notifications/subscriptions", auth(http.HandlerFunc(api.GetPushSubscriptions(pool)))).
+	protected.HandleFunc("/api/notifications/subscriptions", api.GetPushSubscriptions(pool)).
 		Methods(http.MethodGet)
 
-	// ── CORS ─────────────────────────────────────────────────────────────────
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
-		frontendURL = "http://localhost:3000"
+		frontendURL = "http://localhost:7777"
 	}
 
 	corsHandler := gorilllaHandlers.CORS(
@@ -128,7 +115,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "7111"
 	}
 
 	server := &http.Server{
@@ -140,7 +127,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("server listening on :%s", port)
+		log.Printf("server listening on :%s  (APP_ENV=%s)", port, os.Getenv("APP_ENV"))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}
@@ -149,12 +136,12 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-
 	log.Println("shutting down...")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("shutdown error: %v", err)
+	if err := server.Shutdown(shutCtx); err != nil {
+		log.Printf("shutdown: %v", err)
 	}
-	log.Println("Server shutdown complete")
+	log.Println("shut down...")
 }
