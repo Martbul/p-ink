@@ -29,9 +29,9 @@ echo "✓ Backend built → $BACKEND_DIR/bin/server"
 # ── Frontend ──────────────────────────────────────────────────────────────────
 echo "→ Installing frontend deps..."
 cd "$FRONTEND_DIR"
-pnpm install --frozen-lockfile
+npm install
 echo "→ Building frontend..."
-pnpm build
+npm run build
 echo "✓ Frontend built"
 
 # ── pm2 ───────────────────────────────────────────────────────────────────────

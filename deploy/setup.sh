@@ -56,9 +56,9 @@ fi
 echo "✓ Node $(node --version)"
 
 # ── 4. pnpm + pm2 ─────────────────────────────────────────────────────────────
-npm install -g pnpm pm2 --quiet
+npm install -g pm2 --quiet
 pm2 startup systemd -u root --hp /root | tail -1 | bash || true
-echo "✓ pnpm $(pnpm --version), pm2 $(pm2 --version)"
+echo "✓ pm2 $(pm2 --version)"
 
 # ── 5. Clone repo ─────────────────────────────────────────────────────────────
 if [[ -d "$DEPLOY_DIR/.git" ]]; then

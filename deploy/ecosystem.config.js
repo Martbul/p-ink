@@ -23,7 +23,7 @@ module.exports = {
     },
     {
       name: "p-ink-frontend",
-      script: "pnpm",
+      script: "npm",
       args: "start",
       cwd: "/opt/p-ink/frontend",
       // next start reads PORT from .env.local automatically

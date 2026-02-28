@@ -92,13 +92,13 @@ if $CHANGED_FRONTEND; then
   log "Rebuilding frontend..."
   cd "$FRONTEND_DIR"
 
-  # Only reinstall deps if package.json or lockfile changed
-  if git diff --name-only "$BEFORE" "$AFTER" | grep -qE "^frontend/(package\.json|pnpm-lock\.yaml)"; then
-    log "  package files changed — running pnpm install..."
-    pnpm install --frozen-lockfile
+  # Reinstall deps only if package.json or lockfile changed
+  if git diff --name-only "$BEFORE" "$AFTER" | grep -qE "^frontend/(package\.json|package-lock\.json)"; then
+    log "  package files changed — running npm install..."
+    npm install
   fi
 
-  pnpm build || die "Frontend build failed"
+  npm run build || die "Frontend build failed"
   log "✓ Frontend built"
 
   # pm2 reload does a rolling restart (keeps old process alive until new one is ready)
