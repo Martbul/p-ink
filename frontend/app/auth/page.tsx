@@ -60,7 +60,7 @@ export default function AuthPage() {
             <FrameMiniMockup size="lg" />
           </div>
           <p className="font-display text-5xl font-light italic leading-snug mb-6 text-cream/95">
-            "Distance means so little when someone means so much."
+            &rdquo;Distance means so little when someone means so much&rdquo;
           </p>
           <p className="text-sm tracking-widest uppercase text-rose/80 font-medium">— Tom McNeal</p>
         </div>
