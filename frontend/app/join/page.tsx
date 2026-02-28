@@ -1,28 +1,15 @@
 "use client";
 
-/**
- * /join?token=abc123
- *
- * The partner clicks the invite link. This page is completely outside
- * onboarding — it works whether the partner is a new user or returning.
- *
- * Flow:
- *   1. Fetch public invite info (no auth needed — shows "Alex invited you")
- *   2. If not signed in → show preview + redirect to /auth
- *      Clerk saves the redirect so they land back here after sign-in
- *   3. If signed in → POST /api/couples/join → /dashboard
- */
-
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { useUser } from "@/providers/UserProvider";
+import { api, ApiError } from "@/api";
 import type { InviteInfoResponse } from "@/types/api";
 import { Button, Spinner } from "@/components/ui";
-import { api, ApiError } from "@/api";
 
-export default function JoinPage() {
+function JoinPageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
@@ -31,51 +18,67 @@ export default function JoinPage() {
   const { joinCouple, couple, isLoading: userLoading } = useUser();
 
   const [info, setInfo] = useState<InviteInfoResponse | null>(null);
-  // Initialize state based on whether token exists right away
-  const[loadingInfo, setLoadingInfo] = useState(!!token);
+  const [fetchError, setFetchError] = useState("");
   const [joining, setJoining] = useState(false);
-  const [error, setError] = useState(token ? "" : "Missing invite token.");
+  const [joinError, setJoinError] = useState("");
 
-  // Always fetch public invite info first — works without auth
+  // Fetch invite info — only runs when token is present
   useEffect(() => {
-    // If there's no token, the initial state already handles the error.
-    if (!token) return;
-
+    if (!token) return; // no token → render handles it below
+    let cancelled = false;
     api
       .getInviteInfo(token)
-      .then(setInfo)
+      .then((data) => { if (!cancelled) setInfo(data); })
       .catch((err: ApiError) => {
-        setError(
-          err.status === 410
-            ? "This invite has already been used or has expired."
-            : "Invalid invite link."
-        );
-      })
-      .finally(() => setLoadingInfo(false));
+        if (!cancelled) {
+          setFetchError(
+            err.status === 410
+              ? "This invite has already been used or has expired."
+              : "Invalid invite link."
+          );
+        }
+      });
+    return () => { cancelled = true; };
   }, [token]);
 
-  // Once signed in and invite is valid, auto-join
+  // Auto-join once signed in and info is loaded
   useEffect(() => {
     if (!clerkLoaded || userLoading || !isSignedIn || !info || joining) return;
     if (couple) {
       router.replace("/dashboard");
       return;
     }
+    let cancelled = false;
     async function doJoin() {
       setJoining(true);
       try {
         await joinCouple(token);
-        router.replace("/dashboard");
-      } catch (error) {
-        const err = error as Error;
-        setError(err.message ?? "Could not join couple");
-        setJoining(false);
+        if (!cancelled) router.replace("/dashboard");
+      } catch (err) {
+        if (!cancelled) {
+          setJoinError((err as Error).message ?? "Could not join couple");
+          setJoining(false);
+        }
       }
     }
     doJoin();
-  },[clerkLoaded, userLoading, isSignedIn, info, couple, token, joinCouple, router, joining]);
+    return () => { cancelled = true; };
+  }, [clerkLoaded, userLoading, isSignedIn, info, couple, token, joinCouple, router, joining]);
 
-  if (loadingInfo || (isSignedIn && (userLoading || joining))) {
+  // ── No token in URL ────────────────────────────────────────────────────────
+  if (!token) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-6 bg-cream">
+        <p className="font-display text-3xl italic text-rose text-center">
+          Missing invite token.
+        </p>
+        <Link href="/"><Button variant="ghost">Back to home</Button></Link>
+      </div>
+    );
+  }
+
+  // ── Loading / joining ──────────────────────────────────────────────────────
+  if ((!info && !fetchError) || (isSignedIn && (userLoading || joining))) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-cream">
         <Spinner />
@@ -86,6 +89,8 @@ export default function JoinPage() {
     );
   }
 
+  // ── Errors ─────────────────────────────────────────────────────────────────
+  const error = fetchError || joinError;
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-6 bg-cream">
@@ -95,7 +100,7 @@ export default function JoinPage() {
     );
   }
 
-  // Not signed in — show invite preview and prompt to sign in
+  // ── Not signed in — invite preview ─────────────────────────────────────────
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
@@ -122,16 +127,29 @@ export default function JoinPage() {
         <p className="text-sm text-muted mb-8 leading-relaxed" style={{ fontWeight: 300 }}>
           Sign in with Google to accept the invite and connect your accounts.
           The link expires{" "}
-          {info ? new Date(info.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric" }) : "soon"}.
+          {info
+            ? new Date(info.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+            : "soon"}.
         </p>
 
-        {/* After sign-in Clerk will redirect back to this URL */}
         <Link href={`/auth?redirect_url=/join?token=${token}`}>
-          <Button variant="primary" full>
-            Sign in to accept →
-          </Button>
+          <Button variant="primary" full>Sign in to accept →</Button>
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-cream">
+          <Spinner />
+        </div>
+      }
+    >
+      <JoinPageInner />
+    </Suspense>
   );
 }
