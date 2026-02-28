@@ -120,31 +120,19 @@ func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
 
 			// ── IMAGE PROCESSING HOOK ──────────────────────────────────────
 			// TODO: call your BMP composition pipeline here.
-			//
 			// Input:  c.StorageKey (Cloudinary public_id of the raw upload)
-			//         store.PublicURL(key) — delivery URL you can pass to
-			//         Cloudinary transformation APIs or your own renderer
-			//
-			// Output: composed 800×480 BMP uploaded to Cloudinary,
-			//         its URL and SHA-256 hash
-			//
-			// Then update the partner's frame state so the ESP32 picks it up:
-			//
-			//   bmpURL, bmpHash, err := image.Compose(ctx, store, couple, c)
-			//   if err == nil {
-			//       expiresAt, _ := db.NextMidnight(couple.Timezone)
-			//       partnerDevice, _ := db.GetDeviceByOwner(ctx, pool, sentTo)
-			//       if partnerDevice != nil {
-			//           _ = db.UpsertFrameState(ctx, pool, &models.FrameState{
-			//               DeviceID:  partnerDevice.ID,
-			//               ContentID: &c.ID,
-			//               ImageURL:  bmpURL,
-			//               ImageHash: bmpHash,
-			//               ExpiresAt: expiresAt,
-			//           })
-			//       }
-			//   }
+			// Output: composed 800×480 BMP uploaded to Cloudinary, URL + SHA-256 hash
+			// Then:   call db.UpsertFrameState with the new BMP details
 			// ──────────────────────────────────────────────────────────────
+
+			// ── Feed tamagotchi ────────────────────────────────────────────
+			// Photo/drawing uploads feed the partner's Tamagotchi.
+			// The sender (user) is the controller — their action feeds the
+			// Tamagotchi owned by the recipient (partner).
+			if feedResult, feedErr := db.Feed(r.Context(), pool, user.ID, c.Type); feedErr == nil && feedResult.LeveledUp {
+				// TODO: send push notification to owner about level up
+				_ = feedResult
+			}
 
 		default:
 			Error(w, http.StatusBadRequest, "type must be photo, message, or drawing")

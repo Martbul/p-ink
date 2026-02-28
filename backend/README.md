@@ -327,3 +327,9 @@ E-ink displays on ESP32 have very limited memory and no GPU. Text rendering, fon
 
 **Why poll instead of push to the frame?**
 The frame is behind a home NAT. A push-based architecture would require the frame to maintain a persistent connection (costly for battery life) or expose a port (complex network setup). Polling every 60 seconds is a good compromise — changes appear within a minute, and deep-sleep current is ~10 µA between polls.
+
+main.go
+  └── api/tamagotchi.go       parses HTTP, calls service, writes response
+        └── domain/tamagotchi/service.go   pure business logic
+              └── db/tamagotchi.go         raw SQL, returns models
+                    └── models/models.go   structs only

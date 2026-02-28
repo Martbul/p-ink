@@ -100,11 +100,18 @@ func main() {
 	protected.HandleFunc("/api/notifications/subscriptions", api.GetPushSubscriptions(pool)).
 		Methods(http.MethodGet)
 
+	protected.HandleFunc("/api/tamagotchi/mine", api.GetMyTamagotchi(pool)).Methods(http.MethodGet)
+	protected.HandleFunc("/api/tamagotchi/partner", api.GetPartnerTamagotchi(pool)).Methods(http.MethodGet)
+	protected.HandleFunc("/api/tamagotchi/rename", api.RenameTamagotchi(pool)).Methods(http.MethodPost)
+	protected.HandleFunc("/api/tamagotchi/shop", api.GetShop(pool)).Methods(http.MethodGet)
+	protected.HandleFunc("/api/tamagotchi/shop/buy", api.BuyItem(pool)).Methods(http.MethodPost)
+	protected.HandleFunc("/api/tamagotchi/equip", api.EquipItem(pool)).Methods(http.MethodPost)
+	protected.HandleFunc("/api/tamagotchi/events", api.GetEvents(pool)).Methods(http.MethodGet)
+
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "http://localhost:7777"
 	}
-
 
 	//TODO: regex the device origins
 	iotDeviceURL := "http://custom-iot-device.local"
@@ -135,6 +142,23 @@ func main() {
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
+
+	// ── Tamagotchi decay goroutine ────────────────────────────────────────────
+	// Runs every 12 hours. Subtracts HP from unfed tamagotchis and updates mood.
+	go func() {
+		ticker := time.NewTicker(12 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := db.ApplyDecay(context.Background(), pool); err != nil {
+					log.Printf("[decay] error: %v", err)
+				} else {
+					log.Println("[decay] tick applied")
+				}
+			}
+		}
+	}()
 
 	go func() {
 		log.Printf("server listening on :%s  (APP_ENV=%s)", port, os.Getenv("APP_ENV"))

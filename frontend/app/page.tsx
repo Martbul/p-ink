@@ -6,338 +6,230 @@ import { cn } from "@/lib/utils";
 import { FrameMiniMockup } from "@/components/frame/FrameMiniMockup";
 import { useAuth } from "@clerk/nextjs";
 
-const PROMPTS =[
+// --- CUSTOM CYBERPUNK SHAPES ---
+// We use inline clip-paths to kill the standard rectangles
+const polyClip =
+  "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
+const polyClipReverse =
+  "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))";
+
+const PROMPTS = [
   "What made you smile today?",
   "Describe your perfect Sunday morning.",
   "What song reminds you of us?",
   "Where do you want to travel together next?",
-  "What's a memory of us you'd keep forever?",
-  "If you could call me right now, what's the first thing you'd say?",
 ];
 
-const STEPS =[
+const STEPS = [
   {
-    n: "01",
-    title: "Plug in the frame",
-    desc: "Place the e-ink frame on your desk. It connects to WiFi and shows a pairing code. Enter it in the app — done.",
+    step: "01",
+    label: "INITIATE",
+    title: "Link the System",
+    desc: "Boot up the e-ink terminal. It syncs to the localized network and outputs a pairing sequence. Enter the code on your mobile HUD.",
   },
   {
-    n: "02",
-    title: "Answer together",
-    desc: "Each morning, a new question appears. Both partners answer from their phones. The frame updates when both have replied.",
+    step: "02",
+    label: "TRANSMIT",
+    title: "Dual Uplink",
+    desc: "A daily query generates at 08:00. Both users transmit data asynchronously. The physical display unifies the data only when both signals lock.",
   },
   {
-    n: "03",
-    title: "Watch it fade",
-    desc: "Your answers and a shared photo live on the frame all day. At midnight they fade, making room for tomorrow.",
-  },
-];
-
-const FEATURES =[
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-      </svg>
-    ),
-    name: "100+ daily prompts",
-    desc: "Across categories: deep, funny, nostalgic. Never the same question twice.",
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <polyline points="21 15 16 10 5 21" />
-      </svg>
-    ),
-    name: "Shared photo queue",
-    desc: "Upload from your phone. The frame cycles through your memories daily.",
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
-    ),
-    name: "Midnight fade",
-    desc: "Answers fade at midnight in your timezone, creating a gentle daily ritual.",
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="2" y="3" width="20" height="14" rx="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    ),
-    name: "E-ink display",
-    desc: "No blue light. Always on. Readable in any light. Calm and beautiful.",
+    step: "03",
+    label: "RESET",
+    title: "Midnight Fade",
+    desc: "Memory blocks hold for the diurnal cycle. At 00:00 local time, the display clears the buffer, establishing space for tomorrow.",
   },
 ];
 
-const HomeNav = () => {
-  const [scrolled, setScrolled] = useState(false);
-  const { isSignedIn } = useAuth();
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    // Wrap the initial assessment in a timeout to avoid synchronous setState inside useEffect
-    const timer = setTimeout(() => handler(), 0);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("scroll", handler);
-    };
-  },[]);
-
+// 1. HUD Navigation (Replaces standard top bar)
+const CyberNav = () => {
   return (
-    <nav
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 md:px-14 h-20 transition-all duration-500",
-        scrolled
-          ? "bg-cream/80 backdrop-blur-xl shadow-sm border-b border-blush/30 py-4"
-          : "bg-transparent py-6"
-      )}
-    >
-      <Link
-        href="/"
-        className="font-display text-2xl font-light text-deep tracking-wide"
+    <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 pointer-events-none">
+      <div
+        className="pointer-events-auto flex items-center justify-between px-6 py-4 bg-surface/80 backdrop-blur-md border border-neon-blue/30 shadow-[0_0_20px_rgba(5,217,232,0.15)] relative overflow-hidden"
+        style={{ clipPath: polyClip }}
       >
-        p<em className="italic text-rose">-ink</em>
-      </Link>
+        {/* Animated scanline in Nav */}
+        <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] opacity-20 pointer-events-none" />
 
-      <div className="hidden md:flex items-center gap-8">
-        <a
-          href="#how"
-          className="text-sm font-medium text-mid hover:text-rose transition-colors tracking-wide"
-        >
-          How it works
-        </a>
-        <a
-          href="#features"
-          className="text-sm font-medium text-mid hover:text-rose transition-colors tracking-wide"
-        >
-          Features
-        </a>
-
-        {/* {isSignedIn ? (
+        <div className="flex items-center gap-4">
           <Link
-            href="/dashboard"
-            className="btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300"
+            href="/"
+            className="font-display text-2xl font-black tracking-widest text-white uppercase flex items-center gap-2 group"
           >
-            Dashboard
+            <span className="text-neon-pink group-hover:text-glow-pink transition-all">
+              P-INK
+            </span>
+            <span className="text-[10px] font-mono text-neon-blue border border-neon-blue/40 px-1 py-0.5 rounded-sm">
+              v1.0
+            </span>
           </Link>
-        ) : (
+        </div>
+
+        <div className="hidden md:flex items-center gap-8 font-mono text-xs tracking-[0.2em] uppercase">
+          <a
+            href="#architecture"
+            className="text-text-muted hover:text-neon-purple transition-colors"
+          >
+            Architecture
+          </a>
+          <a
+            href="#specs"
+            className="text-text-muted hover:text-neon-pink transition-colors"
+          >
+            Specs
+          </a>
+
           <Link
             href="/auth"
-            className="btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300"
+            className="relative px-6 py-2 bg-neon-pink/10 border border-neon-pink text-neon-pink hover:bg-neon-pink hover:text-white transition-all duration-300"
+            style={{
+              clipPath:
+                "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
+            }}
           >
-            Sign in
+            Connect [ + ]
           </Link>
-        )} */}
-
-        <Link
-          href="/auth"
-          className={cn(
-            "btn bg-rose text-white hover:bg-deep px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300",
-            "shadow-[0_4px_16px_rgba(217,126,139,0.3)] hover:shadow-[0_8px_24px_rgba(74,34,40,0.2)]"
-          )}
-        >
-          Get started
-        </Link>
+        </div>
       </div>
     </nav>
   );
 };
 
-const PromptCarousel = () => {
-  const[idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
+// 2. Immersive Dashboard Hero
+const HeroDashboard = () => {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [promptIdx, setPromptIdx] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx((i) => (i + 1) % PROMPTS.length);
-        setVisible(true);
-      }, 500); // Wait for fade out
-    }, 4000);
+      setPromptIdx((i) => (i + 1) % PROMPTS.length);
+    }, 5000);
     return () => clearInterval(timer);
-  },[]);
+  }, []);
 
   return (
-    <div className="min-h-[40px] flex items-center justify-center">
-      <p
-        className={cn(
-          "font-display italic text-xl text-rose text-center transition-all duration-500 ease-out",
-          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-        )}
-      >
-        &rdquo;{PROMPTS[idx]}&rdquo;
-      </p>
-    </div>
-  );
-};
-
-interface Petal {
-  id: number;
-  x: number;
-  size: number;
-  delay: number;
-  duration: number;
-  opacity: number;
-  isRose: boolean;
-}
-
-const FloatingPetals = () => {
-  const [petals, setPetals] = useState<Petal[]>([]);
-
-  // Calculate random values asynchronously to prevent SSR hydration errors
-  // while adhering to effect limits
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPetals(
-        Array.from({ length: 18 }, (_, i) => ({
-          id: i,
-          x: Math.random() * 100,
-          size: 8 + Math.random() * 14,
-          delay: Math.random() * 15,
-          duration: 18 + Math.random() * 12,
-          opacity: 0.15 + Math.random() * 0.25,
-          isRose: Math.random() > 0.5,
-        }))
-      );
-    }, 0);
-    return () => clearTimeout(timer);
-  },[]);
-
-  if (petals.length === 0) return null;
-
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {petals.map((p) => (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-dark pt-20">
+      {/* Immersive Background: Synthwave Sun & 3D Grid Floor */}
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] bg-gradient-to-t from-neon-pink to-transparent rounded-full opacity-30 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-[40vh] perspective-1000">
         <div
-          key={p.id}
-          className="absolute rounded-[50%_0_50%_0]"
-          style={{
-            left: `${p.x}%`,
-            width: p.size,
-            height: p.size * 1.4,
-            opacity: p.opacity,
-            background: p.isRose ? "var(--color-rose)" : "var(--color-blush)",
-            animation: `floatPetal ${p.duration}s linear ${p.delay}s infinite`,
-          }}
+          className="w-[200%] h-[200%] ml-[-50%] mt-[-20%] grid-bg transform rotate-x-[75deg] opacity-40 border-t border-neon-blue shadow-[0_-10px_30px_rgba(5,217,232,0.2)]"
+          style={{ transformOrigin: "top center" }}
         />
-      ))}
-    </div>
-  );
-};
+      </div>
 
-const HeroSection = () => {
-  const [email, setEmail] = useState("");
-  const[submitted, setSubmitted] = useState(false);
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Left: Text & Terminal Input */}
+        <div className="lg:col-span-7 flex flex-col gap-6 relative">
+          <div className="absolute -left-10 top-0 h-full w-px bg-gradient-to-b from-transparent via-neon-pink to-transparent opacity-50 hidden md:block" />
 
-  return (
-    <section className="relative min-h-[100dvh] flex items-center overflow-hidden pt-20">
-      {/* Soft atmospheric background blending */}
-      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-rose/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blush/20 blur-[100px] pointer-events-none" />
-      
-      <FloatingPetals />
+          <div className="flex items-center gap-3 text-neon-blue font-mono text-xs uppercase tracking-[0.3em]">
+            <span className="w-2 h-2 bg-neon-blue animate-pulse" />
+            System Online // Long-Distance Link
+          </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 md:px-14 pt-12 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-        {/* Left Column */}
-        <div className="max-w-xl">
-          <span className="text-eyebrow text-rose animate-fade-up delay-0 block mb-6">
-            For couples who live apart
-          </span>
-
-          <h1 className="text-display-xl text-deep animate-fade-up delay-100 mb-8 tracking-tight">
-            Stay close,
-            <br />
-            <em className="italic text-rose pr-2">across any</em>
-            <br />
-            distance.
+          <h1 className="text-display-xl text-white uppercase tracking-tighter leading-[0.9]">
+            Shared <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple text-glow-pink italic pr-4">
+              Consciousness
+            </span>
           </h1>
 
-          <p className="text-lg leading-relaxed text-mid/90 mb-12 animate-fade-up delay-200 font-light">
-            A shared e-ink frame on your desk. A daily question. Two answers
-            that fade together as the day passes — turning distance into
-            something beautiful.
+          <p className="text-lg text-text-muted font-light max-w-lg mt-4 border-l-2 border-neon-purple/50 pl-4 bg-gradient-to-r from-neon-purple/10 to-transparent py-2">
+            A physical e-ink terminal on your desk. A daily prompt. Two inputs
+            that dissolve at cycle end. Proximity simulated through synchronized
+            data.
           </p>
 
-          {submitted ? (
-            <div className="animate-pop-in bg-rose/10 border border-rose/20 rounded-2xl p-6">
-              <p className="font-display text-2xl italic text-rose">
-                You&apos;re on the list. We&apos;ll be in touch soon ♡
-              </p>
-            </div>
-          ) : (
-            <form
-              className="flex flex-col sm:flex-row gap-4 animate-fade-up delay-300"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (email) setSubmitted(true);
-              }}
-            >
-              <input
-                type="email"
-                className="field-input flex-1 bg-white/60 backdrop-blur-sm border-blush focus:border-rose focus:ring-4 focus:ring-rose/10"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <button
-                type="submit"
-                className="btn bg-rose text-white hover:bg-deep shadow-[0_8px_24px_rgba(212,144,122,0.25)] hover:shadow-[0_8px_24px_rgba(44,24,16,0.2)] py-3 px-8 text-base"
+          {/* Terminal Style Input */}
+          <div className="mt-8">
+            {submitted ? (
+              <div
+                className="bg-surface/80 border border-neon-blue p-4 font-mono text-neon-blue w-fit"
+                style={{ clipPath: polyClipReverse }}
               >
-                Join waitlist
-              </button>
-            </form>
-          )}
-
-          <p className="text-sm text-muted mt-5 animate-fade-up delay-400">
-            No spam. First to know when frames ship.
-          </p>
-        </div>
-
-        {/* Right Column */}
-        <div className="hidden lg:flex flex-col items-center justify-center gap-10">
-          <div className="relative animate-float">
-            {/* Soft glow behind the frame */}
-            <div className="absolute inset-0 bg-rose/20 blur-[60px] rounded-full scale-110" />
-            <div className="relative">
-              <FrameMiniMockup size="lg" />
-            </div>
-          </div>
-          
-          <div className="w-full max-w-sm">
-             <PromptCarousel />
-          </div>
-
-          <div className="flex flex-col items-center gap-4 animate-fade-up delay-500">
-            <div className="flex gap-3">
-              {"483920".split("").map((d, i) => (
+                &gt; USER LINK ESTABLISHED. AWAITING HARDWARE...
+              </div>
+            ) : (
+              <form
+                className="flex flex-col sm:flex-row gap-0 max-w-xl"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (email) setSubmitted(true);
+                }}
+              >
                 <div
-                  key={i}
-                  className="w-12 h-16 flex items-center justify-center rounded-xl font-display text-3xl text-rose bg-white border border-blush/60 shadow-sm"
+                  className="flex-1 flex items-center bg-surface/90 border-y border-l border-white/20 px-4 py-4 font-mono"
                   style={{
-                    animationName: "popIn",
-                    animationDuration: "0.5s",
-                    animationDelay: `${i * 80 + 600}ms`,
-                    animationTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)",
-                    animationFillMode: "both",
+                    clipPath:
+                      "polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)",
                   }}
                 >
-                  {d}
+                  <span className="text-neon-pink mr-3">&gt;</span>
+                  <input
+                    type="email"
+                    className="bg-transparent outline-none text-white w-full placeholder:text-text-muted/40"
+                    placeholder="ENTER_EMAIL_ID_"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <span className="w-2 h-5 bg-neon-blue animate-pulse ml-2" />
                 </div>
-              ))}
-            </div>
-            <p className="text-[10px] font-medium text-muted tracking-[0.2em] uppercase">
-              Frame pairing code
+                <button
+                  type="submit"
+                  className="bg-neon-pink hover:bg-white hover:text-neon-pink text-white font-bold uppercase tracking-widest px-8 py-4 transition-all"
+                  style={{
+                    clipPath:
+                      "polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)",
+                  }}
+                >
+                  Join Net
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Floating Dashboard Element (Collage feel) */}
+        <div className="lg:col-span-5 relative h-[500px] flex items-center justify-center mt-10 lg:mt-0">
+          {/* Background Decorative Data Plates */}
+          <div
+            className="absolute top-10 right-0 w-64 h-32 border border-white/5 bg-surface/40 backdrop-blur-md font-mono text-[10px] text-text-muted p-4 -rotate-6"
+            style={{ clipPath: polyClip }}
+          >
+            SYS_LOG: <br />
+            [+] CALIBRATING SYNC...
+            <br />
+            [+] LATENCY: 14ms
+            <br />
+            [+] WAITING FOR USER 2...
+          </div>
+
+          <div
+            className="absolute bottom-10 left-0 w-72 p-4 border-l-2 border-neon-blue bg-surface-light/80 backdrop-blur-xl z-20 shadow-2xl"
+            style={{ clipPath: polyClipReverse }}
+          >
+            <p className="font-mono text-xs text-neon-blue mb-1 uppercase tracking-widest">
+              Incoming Transmission
             </p>
+            <p className="font-display italic text-lg text-white">
+              &quot;{PROMPTS[promptIdx]}&quot;
+            </p>
+          </div>
+
+          {/* Main Frame Mockup */}
+          <div
+            className="relative z-10 animate-float p-2 border border-neon-pink/30 bg-black/50 backdrop-blur-lg shadow-[0_0_50px_rgba(255,42,109,0.3)]"
+            style={{ clipPath: polyClip }}
+          >
+            <FrameMiniMockup size="lg" />
+
+            {/* Corner bracket accents */}
+            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-neon-pink" />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-neon-pink" />
           </div>
         </div>
       </div>
@@ -345,136 +237,307 @@ const HeroSection = () => {
   );
 };
 
-const HowItWorks = () => {
+// 3. Flow Architecture (Replaces horizontal 3-column cards)
+// Uses an alternating vertical timeline (Circuit board feel)
+const ArchitectureFlow = () => {
   return (
-    <section id="how" className="py-32 px-8 md:px-14 max-w-7xl mx-auto relative z-10">
-      <div className="text-center md:text-left mb-20">
-        <p className="text-eyebrow text-rose mb-4">The experience</p>
-        <h2 className="text-display-lg text-deep">
-          Simple by design,
-          <br />
-          <em className="italic text-rose">meaningful by nature.</em>
-        </h2>
-      </div>
+    <section
+      id="architecture"
+      className="relative py-32 bg-surface-dark overflow-hidden"
+    >
+      {/* Center Circuit Line */}
+      <div className="absolute left-6 md:left-1/2 md:-translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-bg-dark via-neon-purple to-bg-dark" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-14">
-        {STEPS.map((s) => (
-          <div 
-            key={s.n} 
-            className="group p-8 md:p-10 rounded-3xl bg-white/40 border border-warm backdrop-blur-sm hover:bg-white hover:border-blush/50 transition-all duration-300 hover:shadow-xl hover:shadow-rose/5 hover:-translate-y-1"
-          >
-            <div className="font-display text-7xl font-light text-rose/30 mb-8 transition-colors group-hover:text-rose/50">
-              {s.n}
-            </div>
-            <h3 className="font-display text-3xl text-deep mb-4">
-              {s.title}
-            </h3>
-            <p className="text-base leading-relaxed text-mid/80 font-light">
-              {s.desc}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-const FeaturesSection = () => {
-  return (
-    <section id="features" className="py-32 px-8 md:px-14 bg-deep relative overflow-hidden">
-      {/* Decorative background glows for the dark section */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-terra/10 blur-[120px] rounded-full pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center md:text-left mb-20">
-          <p className="text-eyebrow text-blush mb-4">What&apos;s inside</p>
-          <h2 className="text-display-lg text-cream">
-            Built with <em className="italic text-rose">intention.</em>
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <div
+          className="text-center mb-24 relative inline-block left-1/2 -translate-x-1/2 bg-surface-dark px-8 py-4 border border-neon-purple/30"
+          style={{ clipPath: polyClip }}
+        >
+          <p className="text-neon-purple font-mono text-xs tracking-[0.4em] uppercase mb-2">
+            Operation Protocol
+          </p>
+          <h2 className="text-4xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
+            System{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-blue">
+              Architecture
+            </span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
-          {FEATURES.map((f, i) => (
-            <div key={i} className="flex flex-col gap-6 group cursor-default">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-rose/10 text-rose border border-rose/10 transition-colors group-hover:bg-rose group-hover:text-white">
-                {f.icon}
+        <div className="flex flex-col gap-20">
+          {STEPS.map((s, i) => {
+            const isEven = i % 2 === 0;
+            return (
+              <div
+                key={s.step}
+                className={cn(
+                  "relative flex flex-col md:flex-row items-center gap-8 md:gap-16",
+                  isEven ? "md:flex-row" : "md:flex-row-reverse",
+                )}
+              >
+                {/* Connecting Node */}
+                <div className="absolute left-6 md:left-1/2 -translate-x-1/2 w-4 h-4 bg-bg-dark border-2 border-neon-purple rotate-45 z-20 shadow-[0_0_15px_rgba(177,34,229,0.8)]" />
+
+                {/* Content Panel */}
+                <div
+                  className={cn(
+                    "w-full md:w-1/2 pl-16 md:pl-0",
+                    isEven ? "md:pr-16 md:text-right" : "md:pl-16 text-left",
+                  )}
+                >
+                  <div
+                    className="relative p-8 bg-surface border border-white/5 hover:border-neon-purple/50 transition-colors group"
+                    style={{ clipPath: isEven ? polyClipReverse : polyClip }}
+                  >
+                    <div
+                      className={cn(
+                        "absolute -top-6 text-7xl font-black text-white/5 group-hover:text-neon-purple/20 transition-colors font-mono",
+                        isEven ? "right-4" : "left-4",
+                      )}
+                    >
+                      {s.step}
+                    </div>
+                    <span className="inline-block px-2 py-1 bg-neon-purple/20 text-neon-purple font-mono text-[10px] tracking-widest uppercase mb-4">
+                      {s.label}
+                    </span>
+                    <h3 className="text-2xl font-display text-white mb-3 uppercase tracking-wide group-hover:text-neon-blue transition-colors">
+                      {s.title}
+                    </h3>
+                    <p className="text-text-muted leading-relaxed text-sm font-mono">
+                      {s.desc}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Empty space for the other half of the grid */}
+                <div className="hidden md:block w-1/2" />
               </div>
-              <div>
-                <h3 className="font-display text-2xl text-cream mb-3">
-                  {f.name}
-                </h3>
-                <p className="text-base leading-relaxed text-cream/60 font-light">
-                  {f.desc}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
 };
 
-const CtaSection = () => {
+// 4. Hardware Specs (Replaces grid rectangles with an angled collage)
+const SpecsCollage = () => {
   return (
-    <section className="py-32 px-8 md:px-14 text-center relative overflow-hidden bg-gradient-to-b from-cream via-blush/20 to-rose/10">
-      <div className="max-w-2xl mx-auto relative z-10">
-        <p className="text-eyebrow text-rose mb-6">Early access</p>
-        <h2 className="text-display-lg text-deep mb-8">
-          Ready to feel
-          <br />
-          <em className="italic text-rose">closer?</em>
-        </h2>
-        <p className="text-xl text-mid/80 mb-14 leading-relaxed font-light">
-          p-ink is in early development. Join the waitlist and be first to know
-          when frames ship.
+    <section
+      id="specs"
+      className="py-32 relative bg-bg-dark border-y border-white/10 overflow-hidden"
+    >
+      {/* Background Japanese typography / aesthetic marks */}
+      <div className="absolute top-10 right-10 text-[150px] font-black text-white/[0.02] writing-vertical-rl pointer-events-none select-none">
+        接続システム
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-16 border-l-4 border-neon-pink pl-6 py-2">
+          <p className="text-neon-pink font-mono text-xs tracking-[0.3em] uppercase mb-2">
+            Hardware & Software
+          </p>
+          <h2 className="text-4xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
+            Technical <span className="text-glow-pink italic">Specs</span>
+          </h2>
+        </div>
+
+        {/* Collage Layout - Overlapping angled panels */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative">
+          {/* Panel 1 */}
+          <div
+            className="md:col-span-7 bg-surface p-8 relative overflow-hidden group border-t border-white/10"
+            style={{ clipPath: polyClip }}
+          >
+            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-neon-blue/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="text-neon-blue mb-4">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </div>
+            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
+              100+ Data Prompts
+            </h3>
+            <p className="text-text-muted font-mono text-sm">
+              Deep, nostalgic, and varied inputs. The algorithmic system ensures
+              zero query repetition. Constantly rotating psychological
+              engagement.
+            </p>
+          </div>
+
+          {/* Panel 2 (Offset/overlapping slightly visually) */}
+          <div
+            className="md:col-span-5 md:mt-12 bg-surface-light p-8 border-r-2 border-neon-purple shadow-[0_0_30px_rgba(177,34,229,0.1)]"
+            style={{ clipPath: polyClipReverse }}
+          >
+            <div className="text-neon-purple mb-4">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
+            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
+              Visual Queue
+            </h3>
+            <p className="text-text-muted font-mono text-sm">
+              Upload encrypted imagery from your mobile HUD. The physical
+              terminal cycles through synchronized memory banks daily.
+            </p>
+          </div>
+
+          {/* Panel 3 */}
+          <div
+            className="md:col-span-4 bg-surface-dark p-8 border border-white/5 mt-6"
+            style={{ clipPath: polyClip }}
+          >
+            <div className="text-neon-pink mb-4">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
+              00:00 Auto-Reset
+            </h3>
+            <p className="text-text-muted font-mono text-sm">
+              Signals fade at 00:00 local, clearing the cache for the next
+              cycle.
+            </p>
+          </div>
+
+          {/* Panel 4 - Wide block */}
+          <div
+            className="md:col-span-8 bg-surface p-8 mt-6 border-b-2 border-neon-blue relative"
+            style={{
+              clipPath:
+                "polygon(0 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))",
+            }}
+          >
+            {/* Grid overlay */}
+            <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none mix-blend-screen" />
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="text-neon-blue p-4 bg-bg-dark rounded-full border border-neon-blue/30 shadow-[0_0_15px_rgba(5,217,232,0.4)]">
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
+                  E-ink Display Protocol
+                </h3>
+                <p className="text-text-muted font-mono text-sm">
+                  Zero blue light radiation. Persistent low-power display. High
+                  contrast organic readability matching paper standards.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// 5. Final CTA Sequence
+const CTASequence = () => {
+  return (
+    <section className="py-32 px-6 relative flex flex-col items-center justify-center text-center overflow-hidden bg-bg-dark">
+      {/* Target Crosshair Decoration */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-neon-pink/10 rounded-full pointer-events-none border-dashed animate-[spin_60s_linear_infinite]" />
+
+      <div
+        className="relative z-10 max-w-2xl bg-surface/40 backdrop-blur-xl p-12 border border-neon-blue/20"
+        style={{ clipPath: polyClip }}
+      >
+        <p className="text-neon-blue font-mono text-xs tracking-[0.4em] uppercase mb-4 animate-pulse">
+          &gt; SYSTEM OVERRIDE AVAILABLE
         </p>
+        <h2 className="text-5xl font-display font-black text-white uppercase tracking-tighter mb-6">
+          Initialize <br />{" "}
+          <span className="text-glow-blue text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white italic">
+            Hardware Run?
+          </span>
+        </h2>
+        <p className="text-text-muted font-mono text-sm mb-10 border-l-2 border-white/20 pl-4 text-left inline-block">
+          p-ink units are currently in fabrication. <br />
+          Register ID to lock in unit 001 allocation.
+        </p>
+
+        <br />
+
         <Link
           href="/auth/sign-up"
-          className="inline-block btn bg-rose text-white text-lg px-12 py-5 shadow-[0_8px_32px_rgba(212,144,122,0.35)] hover:shadow-[0_16px_48px_rgba(212,144,122,0.4)] hover:bg-deep transition-all duration-300"
+          className="inline-flex items-center gap-4 bg-neon-blue/10 border-2 border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-bg-dark font-black uppercase tracking-[0.2em] px-10 py-4 transition-all duration-300 shadow-[0_0_20px_rgba(5,217,232,0.2)] hover:shadow-[0_0_40px_rgba(5,217,232,0.6)] group"
+          style={{
+            clipPath:
+              "polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px)",
+          }}
         >
-          Join the waitlist
+          <span>Secure Hardware</span>
+          <span className="font-mono text-xs group-hover:translate-x-2 transition-transform">
+            &gt;&gt;
+          </span>
         </Link>
       </div>
     </section>
   );
 };
 
-const HomeFooter = () => {
-  const [year, setYear] = useState<number>(2026);
-
-  useEffect(() => {
-    // Avoids calling impure function during render
-    const timer = setTimeout(() => setYear(new Date().getFullYear()), 0);
-    return () => clearTimeout(timer);
-  },[]);
-
+const Footer = () => {
   return (
-    <footer className="px-8 md:px-14 py-10 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-rose/10 bg-cream">
-      <span className="font-display text-2xl font-light text-deep">
-        p<em className="italic text-rose">-ink</em>
-      </span>
-      <span className="text-sm font-light text-muted">
-        © {year} p-ink. Made with care for long-distance couples.
-      </span>
+    <footer className="py-6 px-6 border-t border-white/10 bg-bg-dark text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4 font-mono text-xs text-text-muted uppercase tracking-widest">
+      <div className="flex items-center gap-2">
+        <span className="text-neon-pink">P-INK</span>
+        <span>OS_VERSION: 2026.1</span>
+      </div>
+      <div>[ SECURE CONNECTION ESTABLISHED ]</div>
     </footer>
   );
 };
 
-
 export default function HomePage() {
   return (
-    <main className="bg-cream min-h-screen text-ink font-body selection:bg-rose/20 selection:text-deep">
-      <HomeNav />
-      <HeroSection />
-      
-      <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-blush/50 to-transparent max-w-4xl mx-auto" />
-      
-      <HowItWorks />
-      <FeaturesSection />
-      <CtaSection />
-      <HomeFooter />
+    <main className="bg-bg-dark min-h-screen text-text-main relative selection:bg-neon-pink/30 selection:text-white">
+      <div className="fixed inset-0 pointer-events-none z-[100] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
+
+      <CyberNav />
+      <HeroDashboard />
+      <ArchitectureFlow />
+      <SpecsCollage />
+      <CTASequence />
+      <Footer />
     </main>
   );
 }

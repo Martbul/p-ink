@@ -1,32 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream:   #fdfafb; /* Soft pinkish white */
-  --color-warm:    #f7eaea; /* Pale petal */
-  --color-blush:   #edc7c9; /* Dusty pink */
-  --color-rose:    #d97e8b; /* Vibrant soft rose */
-  --color-terra:   #c26573; /* Deep coral/rose */
-  --color-deep:    #4a2228; /* Maroon/brown */
-  --color-mid:     #7a4249; /* Mid mauve */
-  --color-ink:     #211013; /* Almost black pink */
-  --color-gold:    #c49c6e; /* Accent */
-  --color-muted:   #a67077; /* Muted rose */
-  --color-success: #6b8f78;
-  --color-error:   #c45b5b;
+  /* Synthwave / Cyberpunk Palette */
+  --color-bg-dark:       #080614; /* Deep space/city night */
+  --color-surface:       #13102b; /* Glassmorphism panels */
+  --color-surface-light: #1f1a45; /* Hover states */
+  --color-surface-dark:  #05040d; /* Deeper background sections */
+  
+  --color-neon-pink:     #ff2a6d; /* Vibrant magenta */
+  --color-neon-blue:     #05d9e8; /* Cyan/Electric Blue */
+  --color-neon-purple:   #b122e5; /* Electric Violet */
+  
+  --color-text-main:     #e0e6ed; /* Crisp white-blue for main text */
+  --color-text-muted:    #8b93b0; /* Dimmed lavender/blue for body */
 
-  --font-display: var(--font-display), Georgia, serif;
+  /* Fonts - adding a tech/mono vibe to the display */
+  --font-display: var(--font-display), "Orbitron", "Courier New", monospace;
   --font-body: var(--font-body), system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --shadow-sm: 0 2px 8px rgba(74, 34, 40, 0.05);
-  --shadow-md: 0 4px 24px rgba(74, 34, 40, 0.08);
-  --shadow-lg: 0 16px 56px rgba(74, 34, 40, 0.12);
-  --shadow-xl: 0 32px 80px rgba(74, 34, 40, 0.16);
-
+  /* Custom Animations */
   --animate-fade-up: fadeUp 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
   --animate-fade-in: fadeIn 0.4s ease both;
   --animate-scale-in: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   --animate-pop-in: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
@@ -48,11 +47,16 @@
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-14px); }
   }
-  @keyframes floatPetal {
-    0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
-    8%   { opacity: 1; }
-    92%  { opacity: 1; }
-    100% { transform: translateY(-10vh) rotate(540deg); opacity: 0; }
+  /* Animation for the floating neon shapes */
+  @keyframes floatShape {
+    0%   { transform: translateY(110vh) scale(0.8) rotate(0deg); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1.2) rotate(360deg); opacity: 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 }
 
@@ -65,36 +69,72 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-main);
   }
 
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: var(--color-warm); }
-  ::-webkit-scrollbar-thumb { background: var(--color-blush); border-radius: 2px; }
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-main);
+    /* Neon selection colors */
+    ::selection {
+      background: rgba(255, 42, 109, 0.3);
+      color: var(--color-neon-blue);
+    }
+  }
+
+  /* Cyberpunk Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-bg-dark); }
+  ::-webkit-scrollbar-thumb { 
+    background: var(--color-neon-purple); 
+    border-radius: 3px; 
+  }
+  ::-webkit-scrollbar-thumb:hover { 
+    background: var(--color-neon-pink); 
+  }
 }
 
 @layer utilities {
   .text-display-xl {
     font-family: var(--font-display);
-    font-size: clamp(56px, 8vw, 96px);
-    font-weight: 300;
-    line-height: 1.02;
+    font-size: clamp(48px, 8vw, 84px);
+    font-weight: 900;
+    line-height: 1.05;
   }
   
   .text-display-lg {
     font-family: var(--font-display);
-    font-size: clamp(40px, 6vw, 72px);
-    font-weight: 300;
-    line-height: 1.05;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
   }
 
-  .text-eyebrow {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+  /* --- Retro-Futuristic Utilities --- */
+
+  /* Glowing Text Effects */
+  .text-glow-pink {
+    text-shadow: 0 0 10px rgba(255, 42, 109, 0.8), 0 0 20px rgba(255, 42, 109, 0.4);
+  }
+  
+  .text-glow-blue {
+    text-shadow: 0 0 10px rgba(5, 217, 232, 0.8), 0 0 20px rgba(5, 217, 232, 0.4);
+  }
+  
+  .text-glow-purple {
+    text-shadow: 0 0 10px rgba(177, 34, 229, 0.8), 0 0 20px rgba(177, 34, 229, 0.4);
   }
 
+  /* Vaporwave / 80s Grid Background */
+  .grid-bg {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(177, 34, 229, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(177, 34, 229, 0.1) 1px, transparent 1px);
+    background-position: center top;
+  }
+
+  /* Animation delays used in the React code */
   .delay-0   { animation-delay: 0ms; }
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }

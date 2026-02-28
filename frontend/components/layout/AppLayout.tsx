@@ -65,12 +65,12 @@ function TopBar() {
         href="/dashboard"
         className="font-display text-xl font-light text-deep"
       >
-        love
+        p
         <em
           className="italic text-terra not-italic"
           style={{ fontStyle: "italic" }}
         >
-          frame
+          -ink
         </em>
       </Link>
 

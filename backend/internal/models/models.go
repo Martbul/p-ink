@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// ─── User ─────────────────────────────────────────────────────────────────────
 
 type User struct {
 	ID        uuid.UUID `json:"id"`
@@ -15,6 +16,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// ─── Couple ───────────────────────────────────────────────────────────────────
 
 type CoupleStatus string
 
@@ -32,6 +34,7 @@ type Couple struct {
 	CreatedAt time.Time    `json:"created_at"`
 }
 
+// ─── InviteToken ──────────────────────────────────────────────────────────────
 
 type InviteToken struct {
 	Token     string     `json:"token"`
@@ -42,6 +45,7 @@ type InviteToken struct {
 	UsedBy    *uuid.UUID `json:"used_by,omitempty"`
 }
 
+// ─── Device ───────────────────────────────────────────────────────────────────
 
 type Device struct {
 	ID         uuid.UUID  `json:"id"`
@@ -54,6 +58,7 @@ type Device struct {
 	CreatedAt  time.Time  `json:"created_at"`
 }
 
+// ─── Content ──────────────────────────────────────────────────────────────────
 
 type ContentType string
 
@@ -85,6 +90,7 @@ type Content struct {
 	CreatedAt   time.Time     `json:"created_at"`
 }
 
+// ─── FrameState ───────────────────────────────────────────────────────────────
 
 type FrameState struct {
 	DeviceID   uuid.UUID  `json:"device_id"`
@@ -95,6 +101,7 @@ type FrameState struct {
 	ExpiresAt  time.Time  `json:"expires_at"`
 }
 
+// ─── PushSubscription ─────────────────────────────────────────────────────────
 
 type PushSubscription struct {
 	ID        uuid.UUID `json:"id"`
@@ -103,4 +110,139 @@ type PushSubscription struct {
 	P256dh    string    `json:"p256dh"`
 	Auth      string    `json:"auth"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// ─── Tamagotchi ───────────────────────────────────────────────────────────────
+
+type TamagotchiSpecies string
+
+const (
+	SpeciesBear  TamagotchiSpecies = "bear"
+	SpeciesCat   TamagotchiSpecies = "cat"
+	SpeciesBunny TamagotchiSpecies = "bunny"
+	SpeciesGhost TamagotchiSpecies = "ghost"
+	SpeciesPlant TamagotchiSpecies = "plant"
+)
+
+type TamagotchiMood string
+
+const (
+	MoodHappy   TamagotchiMood = "happy"
+	MoodNeutral TamagotchiMood = "neutral"
+	MoodSad     TamagotchiMood = "sad"
+	MoodSleeping TamagotchiMood = "sleeping"
+	MoodExcited TamagotchiMood = "excited"
+)
+
+type Tamagotchi struct {
+	ID           uuid.UUID         `json:"id"`
+	CoupleID     uuid.UUID         `json:"couple_id"`
+	OwnerID      uuid.UUID         `json:"owner_id"`
+	ControllerID uuid.UUID         `json:"controller_id"`
+	Name         string            `json:"name"`
+	Species      TamagotchiSpecies `json:"species"`
+	Health       int               `json:"health"`
+	MaxHealth    int               `json:"max_health"`
+	XP           int               `json:"xp"`
+	Level        int               `json:"level"`
+	Mood         TamagotchiMood    `json:"mood"`
+	LastFedAt    *time.Time        `json:"last_fed_at,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+}
+
+// ─── Shop Item ────────────────────────────────────────────────────────────────
+
+type ItemType string
+
+const (
+	ItemTypeOutfit     ItemType = "outfit"
+	ItemTypeAccessory  ItemType = "accessory"
+	ItemTypeBackground ItemType = "background"
+	ItemTypeAnimation  ItemType = "animation"
+	ItemTypePosition   ItemType = "position"
+)
+
+type TamagotchiItem struct {
+	ID             uuid.UUID `json:"id"`
+	Type           ItemType  `json:"type"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description"`
+	XPCost         int       `json:"xp_cost"`
+	PreviewURL     *string   `json:"preview_url,omitempty"`
+	SpeciesLock    *string   `json:"species_lock,omitempty"`
+	UnlocksAtLevel int       `json:"unlocks_at_level"`
+}
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
+
+type TamagotchiInventoryEntry struct {
+	ID           uuid.UUID      `json:"id"`
+	TamagotchiID uuid.UUID      `json:"tamagotchi_id"`
+	Item         TamagotchiItem `json:"item"`
+	PurchasedAt  time.Time      `json:"purchased_at"`
+}
+
+// ─── Equipped ─────────────────────────────────────────────────────────────────
+
+type EquippedSlot string
+
+const (
+	SlotOutfit     EquippedSlot = "outfit"
+	SlotAccessory  EquippedSlot = "accessory"
+	SlotBackground EquippedSlot = "background"
+	SlotPosition   EquippedSlot = "position"
+)
+
+type TamagotchiEquipped struct {
+	TamagotchiID uuid.UUID    `json:"tamagotchi_id"`
+	Slot         EquippedSlot `json:"slot"`
+	Item         TamagotchiItem `json:"item"`
+}
+
+// ─── Event ────────────────────────────────────────────────────────────────────
+
+type TamagotchiEventType string
+
+const (
+	EventFed           TamagotchiEventType = "fed"
+	EventLeveledUp     TamagotchiEventType = "leveled_up"
+	EventItemPurchased TamagotchiEventType = "item_purchased"
+	EventItemEquipped  TamagotchiEventType = "item_equipped"
+	EventMoodChanged   TamagotchiEventType = "mood_changed"
+	EventSleeping      TamagotchiEventType = "sleeping"
+	EventWokeUp        TamagotchiEventType = "woke_up"
+	EventDecay         TamagotchiEventType = "decay"
+)
+
+type TamagotchiEvent struct {
+	ID           uuid.UUID           `json:"id"`
+	TamagotchiID uuid.UUID           `json:"tamagotchi_id"`
+	Type         TamagotchiEventType `json:"type"`
+	XPDelta      int                 `json:"xp_delta"`
+	HealthDelta  int                 `json:"health_delta"`
+	Metadata     map[string]any      `json:"metadata,omitempty"`
+	CreatedAt    time.Time           `json:"created_at"`
+}
+
+// ─── Full Tamagotchi state (API response) ─────────────────────────────────────
+// Combines tamagotchi + inventory + equipped in one payload.
+
+type TamagotchiState struct {
+	Tamagotchi *Tamagotchi              `json:"tamagotchi"`
+	Equipped   []TamagotchiEquipped     `json:"equipped"`
+	Inventory  []TamagotchiInventoryEntry `json:"inventory"`
+	RecentEvents []TamagotchiEvent      `json:"recent_events"`
+}
+
+// ─── Frame Tamagotchi (embedded in PollResponse) ──────────────────────────────
+
+type FrameTamagotchi struct {
+	Species    string `json:"species"`
+	Mood       string `json:"mood"`
+	Health     int    `json:"health"`
+	Level      int    `json:"level"`
+	Outfit     string `json:"outfit,omitempty"`
+	Accessory  string `json:"accessory,omitempty"`
+	Background string `json:"background,omitempty"`
+	Position   string `json:"position,omitempty"`
 }
