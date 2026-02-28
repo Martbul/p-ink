@@ -3,7 +3,7 @@ package api
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -14,9 +14,9 @@ import (
 	"github.com/martbul/p-ink/internal/db"
 )
 
-// WebhookHandler handles POST /api/webhooks/clerk
-// Clerk sends this whenever a user is created or updated.
-// We upsert the user into our own DB so we have a stable internal UUID.
+// WebhookHandler  POST /api/webhooks/clerk
+// Clerk calls this when a user is created or updated.
+// We upsert the user so we have a stable internal UUID before their first API call.
 func WebhookHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -25,7 +25,6 @@ func WebhookHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		// Verify Svix signature
 		if !verifyClerkWebhook(r, body) {
 			Error(w, http.StatusUnauthorized, "invalid webhook signature")
 			return
@@ -47,9 +46,8 @@ func WebhookHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		// Only handle user create/update
 		if event.Type != "user.created" && event.Type != "user.updated" {
-			w.WriteHeader(http.StatusNoContent)
+			NoContent(w)
 			return
 		}
 
@@ -66,45 +64,37 @@ func WebhookHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			Error(w, http.StatusInternalServerError, "db error")
 			return
 		}
-
 		NoContent(w)
 	}
 }
 
-// verifyClerkWebhook checks the svix-signature header against the webhook secret.
-// See: https://clerk.com/docs/integrations/webhooks/overview#verifying-requests
 func verifyClerkWebhook(r *http.Request, body []byte) bool {
 	secret := os.Getenv("CLERK_WEBHOOK_SECRET")
 	if secret == "" {
-		// In development without a secret, skip verification
-		return os.Getenv("ENV") == "development"
+		return os.Getenv("APP_ENV") != "production"
 	}
 
-	// Svix sends: svix-id, svix-timestamp, svix-signature headers
 	svixID        := r.Header.Get("svix-id")
 	svixTimestamp := r.Header.Get("svix-timestamp")
 	svixSignature := r.Header.Get("svix-signature")
-
 	if svixID == "" || svixTimestamp == "" || svixSignature == "" {
 		return false
 	}
 
-	// Build the signed content: id.timestamp.body
 	toSign := svixID + "." + svixTimestamp + "." + string(body)
 
-	// The secret is prefixed with "whsec_" — strip it and base64-decode
+	// Clerk webhook secrets are base64-encoded after the "whsec_" prefix
 	rawSecret := strings.TrimPrefix(secret, "whsec_")
-	secretBytes, err := hex.DecodeString(rawSecret)
+	secretBytes, err := base64.StdEncoding.DecodeString(rawSecret)
 	if err != nil {
-		// Try raw bytes (some keys aren't hex-encoded)
+		// fallback: use raw bytes if base64 decode fails
 		secretBytes = []byte(rawSecret)
 	}
 
 	mac := hmac.New(sha256.New, secretBytes)
 	mac.Write([]byte(toSign))
-	expected := "v1," + hex.EncodeToString(mac.Sum(nil))
+	expected := "v1," + base64.StdEncoding.EncodeToString(mac.Sum(nil))
 
-	// svix-signature may contain multiple signatures (space-separated)
 	for _, sig := range strings.Split(svixSignature, " ") {
 		if hmac.Equal([]byte(sig), []byte(expected)) {
 			return true
