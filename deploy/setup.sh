@@ -6,13 +6,14 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-REPO_URL="${1:-}"
+REPO_URL="${1:-https://github.com/Martbul/p-ink.git}"
 DEPLOY_DIR="/opt/p-ink"
 GO_VERSION="1.22.4"
 NODE_VERSION="20"   # LTS
 
 if [[ -z "$REPO_URL" ]]; then
-  echo "Usage: bash setup.sh <github-repo-url>"
+  echo "Usage: bash setup.sh [github-repo-url]"
+  echo "Default: https://github.com/Martbul/p-ink.git"
   exit 1
 fi
 

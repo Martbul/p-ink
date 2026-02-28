@@ -38,7 +38,7 @@ cd "$DEPLOY_DIR"
 
 BEFORE=$(git rev-parse HEAD)
 git fetch origin
-git pull --ff-only origin HEAD || die "git pull failed — resolve conflicts manually"
+git pull --ff-only origin main || die "git pull failed — resolve conflicts manually"
 AFTER=$(git rev-parse HEAD)
 
 if [[ "$BEFORE" == "$AFTER" && "$TARGET" == "auto" ]]; then
