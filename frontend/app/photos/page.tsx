@@ -1,41 +1,33 @@
 "use client";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, Button, Badge, Spinner } from "@/components/ui";
+import { Spinner } from "@/components/ui"; // Keeping Spinner if it's functional, but styling around it
 import { useUser } from "@/providers/UserProvider";
 import { cn } from "@/lib/utils";
 import type { Content } from "@/types/api";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Cyberpunk Shapes ---
+const polyClip = "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
+const polySmall = "polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)";
 
-function statusLabel(c: Content, myId: string): string {
-  if (c.status === "displayed") return "Next up";
-  if (c.status === "queued") return "In queue";
-  return c.displayed_at
-    ? `Used · ${new Date(c.displayed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-    : "Used";
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ content }: { content: Content }) {
   if (content.status === "displayed")
     return (
-      <Badge variant="online" className="text-[10px]">
-        Next up
-      </Badge>
+      <span className="px-2 py-1 border border-neon-blue bg-neon-blue/10 text-neon-blue font-mono text-[9px] uppercase tracking-widest shadow-[0_0_8px_rgba(5,217,232,0.4)]" style={{ clipPath: polySmall }}>
+        [ Next_Up ]
+      </span>
     );
   if (content.status === "queued")
     return (
-      <Badge variant="terra" className="text-[10px]">
-        In queue
-      </Badge>
+      <span className="px-2 py-1 border border-neon-purple bg-neon-purple/10 text-neon-purple font-mono text-[9px] uppercase tracking-widest" style={{ clipPath: polySmall }}>[ Queued ]
+      </span>
     );
   return (
-    <span
-      className="px-2 py-0.5 rounded-full text-[10px] tracking-wide"
-      style={{ background: "rgba(44,24,16,0.55)", color: "var(--cream)" }}
-    >
+    <span className="px-2 py-1 border border-white/20 bg-black/50 text-text-muted font-mono text-[9px] uppercase tracking-widest" style={{ clipPath: polySmall }}>
       {content.displayed_at
-        ? `Used · ${new Date(content.displayed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+        ? `Used // ${new Date(content.displayed_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" })}`
         : "Used"}
     </span>
   );
@@ -54,21 +46,20 @@ function PhotoGrid({
   partnerName: string;
   onDelete: (id: string) => void;
 }) {
-  // Only show photo and drawing content
-  const photos = items.filter(
-    (c) => c.type === "photo" || c.type === "drawing",
-  );
+  const photos = items.filter((c) => c.type === "photo" || c.type === "drawing");
 
   if (photos.length === 0) {
     return (
-      <p className="text-sm text-muted py-8 text-center">
-        No photos yet. Upload one above to get started.
-      </p>
+      <div className="border border-dashed border-white/20 bg-surface/30 p-12 text-center" style={{ clipPath: polyClip }}>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-text-muted/60 animate-pulse">
+          &gt; DATA_BANK EMPTY. AWAITING UPLINK...
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
       {photos.map((c) => {
         const fromMe = c.sent_by === myId;
         const canDelete = fromMe && c.status === "queued";
@@ -76,73 +67,52 @@ function PhotoGrid({
         return (
           <div
             key={c.id}
-            className="group relative aspect-square rounded-xl overflow-hidden"
-            style={{ background: "var(--warm)" }}
+            className="group relative aspect-square bg-surface border border-white/10 hover:border-neon-blue transition-all duration-300"
+            style={{ clipPath: polySmall }}
           >
-            {/* Photo preview — show Cloudinary image if storage_key exists */}
+            {/* Scanline overlay over images */}
+            <div className="absolute inset-0 z-10 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] opacity-20 pointer-events-none mix-blend-overlay" />
+
             {c.storage_key ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={`${process.env.NEXT_PUBLIC_CLOUDINARY_BASE}/${c.storage_key}`}
                 alt=""
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 group-hover:opacity-80 sepia-[0.3] hue-rotate-[-30deg] saturate-150"
               />
             ) : (
-              <div
-                className="w-full h-full flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg,#ddd4c0,#c8b89a)",
-                }}
-              >
+              <div className="w-full h-full flex items-center justify-center bg-bg-dark border border-neon-blue/20">
                 <div className="text-center">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="rgba(120,100,80,0.5)"
-                    strokeWidth="1.5"
-                    className="mx-auto mb-1"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <p
-                    className="text-xs"
-                    style={{ color: "rgba(120,100,80,0.6)" }}
-                  >
-                    From {fromMe ? "you" : partnerName}
+                  <span className="font-mono text-[10px] text-neon-blue/50 uppercase tracking-widest block mb-1">
+                    [ NO_VISUAL_DATA ]
+                  </span>
+                  <p className="text-[9px] font-mono text-text-muted uppercase tracking-widest">
+                    SRC: {fromMe ? "LOCAL_USER" : "REMOTE_NODE"}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Status badge */}
-            <div className="absolute top-2 left-2">
+            <div className="absolute top-2 left-2 z-20">
               <StatusBadge content={c} />
             </div>
 
-            {/* Delete button — only for your queued photos */}
             {canDelete && (
               <button
                 onClick={() => onDelete(c.id)}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background: "rgba(44,24,16,0.6)", color: "white" }}
+                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-20 bg-bg-dark/80 border border-neon-pink text-neon-pink hover:bg-neon-pink hover:text-white"
+                style={{ clipPath: polySmall }}
+                title="Purge Data"
               >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             )}
+            
+            {/* Cyberpunk corner accents */}
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 group-hover:border-neon-blue z-20 transition-colors m-2" />
           </div>
         );
       })}
@@ -167,11 +137,12 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
 
   return (
     <div
-      className={cn("upload-zone p-12", dragging && "drag-over")}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
+      className={cn(
+        "p-12 relative cursor-pointer transition-all duration-300 border-2 overflow-hidden",
+        dragging ? "border-solid border-neon-pink bg-neon-pink/10 shadow-[0_0_30px_rgba(255,42,109,0.2)]" : "border-dashed border-neon-blue/40 bg-surface/30 hover:border-neon-blue hover:bg-neon-blue/5"
+      )}
+      style={{ clipPath: polyClip }}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
@@ -184,32 +155,21 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
         className="hidden"
         onChange={(e) => e.target.files && onUpload(e.target.files)}
       />
-      <div className="flex flex-col items-center gap-3">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center"
-          style={{ background: "var(--blush)", color: "var(--mid)" }}
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
+      <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+        <div className={cn("w-12 h-12 flex items-center justify-center border transition-colors", dragging ? "border-neon-pink text-neon-pink" : "border-neon-blue/50 text-neon-blue")} style={{ clipPath: polySmall }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <polyline points="16 16 12 12 8 16" />
             <line x1="12" y1="12" x2="12" y2="21" />
             <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
           </svg>
         </div>
         <div>
-          <p className="font-display text-xl text-mid text-center">
-            {dragging
-              ? "Drop to upload"
-              : "Drop a photo here, or click to browse"}
+          <p className="font-display text-xl text-white uppercase tracking-widest mb-2">
+            {dragging ? "INITIALIZE UPLOAD" : "DROP VISUAL DATA HERE"}
           </p>
-          <p className="text-xs text-muted text-center mt-1">
-            JPG, PNG or WebP · Max 20MB · Auto-dithered for e-ink display
+          <p className="font-mono text-[10px] text-text-muted uppercase tracking-[0.2em]">
+            &gt; Click to browse local storage // JPG, PNG, WEBP<br/>
+            &gt; Max 20MB // Auto-Dither Protocol Active
           </p>
         </div>
       </div>
@@ -219,13 +179,10 @@ function UploadZone({ onUpload }: { onUpload: (files: FileList) => void }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
-
 export default function PhotosPage() {
-  const { user, content, isLoading, uploadContent, deleteContent, couple } =
-    useUser();
+  const { user, content, isLoading, uploadContent, deleteContent, couple } = useUser();
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const[uploadError, setUploadError] = useState("");
 
   async function handleUpload(files: FileList) {
     const file = files[0];
@@ -236,7 +193,7 @@ export default function PhotosPage() {
       await uploadContent(file, "photo");
     } catch (error) {
       const err = error as Error;
-      setUploadError(err.message ?? "Upload failed");
+      setUploadError(err.message ?? "Transmission failed");
     } finally {
       setUploading(false);
     }
@@ -251,110 +208,103 @@ export default function PhotosPage() {
     }
   }
 
-  const photos = content.filter(
-    (c) => c.type === "photo" || c.type === "drawing",
-  );
+  const photos = content.filter((c) => c.type === "photo" || c.type === "drawing");
   const queued = photos.filter((c) => c.status !== "archived").length;
   const used = photos.filter((c) => c.status === "archived").length;
 
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center justify-center h-64 text-neon-blue font-mono text-xs uppercase tracking-widest gap-4">
           <Spinner />
+          &gt; Scanning Data Archives...
         </div>
       </AppLayout>
     );
   }
 
   const myId = user?.id ?? "";
-  const partnerName = "your partner"; // useUser().partnerUser?.name.split(" ")[0] via destructure below
+  const partnerName = couple?.status === "active" ? "REMOTE_NODE" : "UNKNOWN";
 
   return (
     <AppLayout>
-      <div className="page-enter">
-        <div className="mb-10">
-          <p className="text-eyebrow mb-2">Photo queue</p>
-          <h1 className="font-display text-5xl font-light text-deep">
-            Your shared <em className="italic text-terra">memories.</em>
-          </h1>
-          <p
-            className="text-base text-muted mt-2 max-w-lg leading-relaxed"
-            style={{ fontWeight: 300 }}
-          >
-            Photos cycle through the frame daily. Upload yours and your partner
-            uploads theirs — they alternate automatically.
-          </p>
-        </div>
-
-        {couple?.status !== "active" ? (
-          <Card padding="md">
-            <p className="text-sm text-muted">
-              Connect with your partner first to share photos.
+      <div className="min-h-screen bg-bg-dark text-white pt-12 pb-24 relative">
+        <div className="fixed inset-0 pointer-events-none z-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
+        
+        <div className="max-w-5xl mx-auto px-6 relative z-10 animate-fade-in">
+          
+          {/* Header */}
+          <div className="mb-10 border-b border-white/10 pb-8">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-muted mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-neon-purple block animate-pulse" />
+              SHARED_MEMORY_BANK
             </p>
-          </Card>
-        ) : (
-          <>
-            {uploading ? (
-              <div className="flex flex-col items-center justify-center gap-3 p-12 rounded-2xl border border-blush bg-warm">
-                <Spinner />
-                <p className="text-sm text-muted">Uploading…</p>
+            <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
+              Visual <span className="text-neon-purple text-glow-purple italic">Archives.</span>
+            </h1>
+            <p className="font-mono text-xs text-text-muted mt-4 border-l-2 border-neon-purple/50 pl-3 py-1 bg-neon-purple/5 max-w-xl leading-relaxed uppercase">
+              Imagery cycles through the hardware terminal diurnally.<br/>
+               Upload local data to alternate sequences with remote node.
+            </p>
+          </div>
+
+          {couple?.status !== "active" ? (
+            <div className="bg-surface border border-red-500/50 p-6" style={{ clipPath: polySmall }}>
+              <p className="font-mono text-xs text-red-400 uppercase tracking-widest">
+                &gt; ERR: Matrix connection required. Pair with remote node first.
+              </p>
+            </div>
+          ) : (
+            <>
+              {uploading ? (
+                <div className="flex flex-col items-center justify-center gap-4 p-12 bg-surface border border-neon-blue/50" style={{ clipPath: polyClip }}>
+                  <Spinner />
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-neon-blue animate-pulse">
+                    &gt; Uploading Data Packet...
+                  </p>
+                </div>
+              ) : (
+                <UploadZone onUpload={handleUpload} />
+              )}
+
+              {uploadError && (
+                <p className="font-mono text-[10px] text-red-500 uppercase mt-2">&gt; ERR: {uploadError}</p>
+              )}
+
+              {/* Warning/Info Box */}
+              <div className="flex items-start gap-3 px-4 py-3 mt-6 bg-yellow-400/5 border border-yellow-400/30" style={{ clipPath: polySmall }}>
+                <span className="text-yellow-400 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </span>
+                <p className="font-mono text-[10px] text-yellow-400/80 uppercase tracking-widest leading-relaxed">
+                  SYS_NOTE: Imagery is auto-converted to 1-bit monochrome and dithered prior to hardware transmission.
+                </p>
               </div>
-            ) : (
-              <UploadZone onUpload={handleUpload} />
-            )}
 
-            {uploadError && (
-              <p className="text-xs text-red-500 mt-2">{uploadError}</p>
-            )}
+              {/* Grid Header */}
+              <div className="flex items-end justify-between mt-16 mb-8 border-b border-white/10 pb-4">
+                <h3 className="font-display text-2xl font-black uppercase tracking-wider text-white">
+                  Data <span className="text-neon-blue">Queue</span>
+                </h3>
+                <div className="font-mono text-[10px] text-text-muted uppercase tracking-widest flex gap-4">
+                  <span>[ <span className="text-neon-purple">{queued}</span> Queued ]</span>
+                  <span>[ <span className="text-white/50">{used}</span> Parsed ]</span>
+                </div>
+              </div>
 
-            <div
-              className="flex items-start gap-3 px-4 py-3.5 rounded-xl mt-4"
-              style={{
-                background: "rgba(184,147,90,0.08)",
-                border: "1px solid rgba(184,147,90,0.2)",
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth="1.8"
-                className="shrink-0 mt-0.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <p
-                className="text-xs leading-relaxed"
-                style={{ color: "var(--gold)" }}
-              >
-                Photos are automatically converted to black-and-white and
-                dithered before being sent to the frame.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between mt-10 mb-5">
-              <h3 className="font-display text-2xl font-normal text-deep">
-                Queue & history
-              </h3>
-              <p className="text-xs text-muted">
-                <span className="font-normal text-terra">{queued}</span> queued
-                · <span className="font-normal text-muted">{used}</span> used
-              </p>
-            </div>
-
-            <PhotoGrid
-              items={content}
-              myId={myId}
-              partnerName={partnerName}
-              onDelete={handleDelete}
-            />
-          </>
-        )}
+              <PhotoGrid
+                items={content}
+                myId={myId}
+                partnerName={partnerName}
+                onDelete={handleDelete}
+              />
+            </>
+          )}
+        </div>
       </div>
     </AppLayout>
   );

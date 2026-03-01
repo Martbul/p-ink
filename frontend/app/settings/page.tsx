@@ -1,71 +1,137 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { useClerk, useAuth } from "@clerk/nextjs";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, Button, Input, Toggle, Badge, Spinner } from "@/components/ui";
+import { Spinner } from "@/components/ui"; 
 import { useUser } from "@/providers/UserProvider";
 import { api } from "@/api";
-import { useAuth } from "@clerk/nextjs";
+import { cn } from "@/lib/utils";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// --- Cyberpunk Shape Utilities ---
+const polyClip = "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
+const polySmall = "polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)";
+
+// --- Custom Cyberpunk UI Components ---
+function CyberPanel({ children, title }: { children: React.ReactNode, title: string }) {
   return (
-    <div className="mb-6">
-      <p className="text-xs uppercase tracking-widest text-muted mb-4 pb-3 border-b border-warm">{title}</p>
+    <div className="bg-surface-dark border border-white/10 p-6 relative mb-8 hover:border-white/20 transition-colors" style={{ clipPath: polyClip }}>
+      <div className="absolute top-0 left-0 w-1/4 h-px bg-gradient-to-r from-neon-blue to-transparent" />
+      <h2 className="font-mono text-xs uppercase tracking-[0.3em] text-neon-blue mb-6 pb-2 border-b border-white/5 flex items-center gap-2">
+        <span className="w-2 h-2 bg-neon-blue inline-block" />
+        {title}
+      </h2>
       {children}
     </div>
   );
 }
 
-function Row({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
+function CyberRow({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-6 py-4 border-b border-[rgba(232,197,176,0.25)] last:border-none">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5 border-b border-white/5 last:border-none">
       <div>
-        <p className="text-sm text-deep">{label}</p>
-        {sub && <p className="text-xs text-muted mt-0.5">{sub}</p>}
+        <p className="font-display text-sm uppercase tracking-wider text-white">{label}</p>
+        {sub && <p className="font-mono text-[10px] text-text-muted mt-1 uppercase tracking-widest leading-relaxed">&gt; {sub}</p>}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
   );
 }
 
-const TZ_OPTIONS = [
-  { value: "Europe/Sofia", label: "Europe/Sofia" },
-  { value: "Europe/London", label: "Europe/London" },
-  { value: "America/New_York", label: "America/New_York" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo" },
-  { value: "Australia/Sydney", label: "Australia/Sydney" },
+function CyberInput({ value, onChange, disabled, type = "text", placeholder = "" }: any) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className="w-full bg-bg-dark border border-white/20 px-4 py-3 font-mono text-sm text-white focus:border-neon-pink focus:outline-none disabled:opacity-50 disabled:bg-surface transition-colors"
+      style={{ clipPath: polySmall }}
+    />
+  );
+}
+
+function CyberButton({ onClick, loading, children, variant = "primary" }: any) {
+  const styles = {
+    primary: "bg-neon-pink/10 border-neon-pink text-neon-pink hover:bg-neon-pink hover:text-white shadow-[0_0_10px_rgba(255,42,109,0.2)]",
+    secondary: "bg-surface border-white/20 text-text-muted hover:border-neon-blue hover:text-neon-blue hover:bg-neon-blue/10",
+    danger: "bg-red-500/10 border-red-500 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_10px_rgba(239,68,68,0.2)]",
+  };
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={cn("px-6 py-2 border font-mono text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50", styles[variant as keyof typeof styles])}
+      style={{ clipPath: polySmall }}
+    >
+      {loading ? <span className="animate-pulse">PROCESSING...</span> : children}
+    </button>
+  );
+}
+
+function CyberToggle({ checked, onChange }: { checked: boolean, onChange: () => void }) {
+  return (
+    <button 
+      type="button" 
+      onClick={onChange} 
+      className={cn("w-14 h-6 border flex items-center px-1 transition-colors relative", checked ? "border-neon-blue bg-neon-blue/10" : "border-white/20 bg-bg-dark")} 
+      style={{ clipPath: polySmall }}
+    >
+      <div className={cn("absolute w-4 h-4 transition-all duration-300", checked ? "bg-neon-blue left-[34px] shadow-[0_0_8px_rgba(5,217,232,0.8)]" : "bg-white/30 left-1")} style={{ clipPath: polySmall }} />
+    </button>
+  );
+}
+
+function CyberBadge({ text, status }: { text: string, status: "online" | "offline" | "neutral" }) {
+  const colors = {
+    online: "text-neon-blue border-neon-blue bg-neon-blue/10",
+    offline: "text-red-400 border-red-400/50 bg-red-400/10",
+    neutral: "text-text-muted border-white/20 bg-surface",
+  };
+  return (
+    <span className={cn("px-3 py-1.5 border font-mono text-[9px] uppercase tracking-widest block text-center", colors[status])} style={{ clipPath: polySmall }}>[{text}]
+    </span>
+  );
+}
+
+const TZ_OPTIONS =[
+  { value: "Europe/Sofia", label: "EU // SOFIA" },
+  { value: "Europe/London", label: "EU // LONDON" },
+  { value: "America/New_York", label: "NA // NEW_YORK" },
+  { value: "America/Los_Angeles", label: "NA // LOS_ANGELES" },
+  { value: "Asia/Tokyo", label: "AS // TOKYO" },
+  { value: "Australia/Sydney", label: "OC // SYDNEY" },
 ];
 
+// ─── Main Settings Page ───────────────────────────────────────────────────────
 export default function SettingsPage() {
-  const { user, couple, partnerUser, device, isLoading, refetch, updateTimezone, createCouple } = useUser();
+  const { user, couple, partnerUser, device, isLoading, updateTimezone, createCouple } = useUser();
   const { getToken } = useAuth();
   const { signOut } = useClerk();
 
+  // Profile Form State
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Seed form from real data
   useEffect(() => {
     if (user) setName(user.name);
   }, [user]);
 
-  // Profile update goes through Clerk — not a backend endpoint.
-  // For now we just show a placeholder.
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    // TODO: Clerk profile update via clerk.user.update({ firstName, lastName })
+    // Placeholder for real Clerk update logic
     await new Promise((r) => setTimeout(r, 600));
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
 
+  // Invite/Partner State
   const [inviteURL, setInviteURL] = useState("");
   const [copied, setCopied] = useState(false);
-  const [creatingCouple, setCreatingCouple] = useState(false);
+  const[creatingCouple, setCreatingCouple] = useState(false);
   const [generatingInvite, setGeneratingInvite] = useState(false);
 
   async function handleCreateCouple() {
@@ -96,9 +162,9 @@ export default function SettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // ── Timezone ──────────────────────────────────────────────────────────────
+  // Timezone State
   const [tz, setTz] = useState("UTC");
-  const [savingTz, setSavingTz] = useState(false);
+  const[savingTz, setSavingTz] = useState(false);
 
   useEffect(() => {
     if (couple?.timezone) setTz(couple.timezone);
@@ -114,9 +180,11 @@ export default function SettingsPage() {
     }
   }
 
+  // Notification State
   const [notifs, setNotifs] = useState(true);
   const [reminder, setReminder] = useState(true);
 
+  // Device status check
   const online = device?.last_seen
     ? Date.now() - new Date(device.last_seen).getTime() < 10 * 60 * 1000
     : false;
@@ -124,164 +192,175 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64"><Spinner /></div>
+        <div className="flex flex-col items-center justify-center h-64 text-neon-blue font-mono text-xs uppercase tracking-widest gap-4">
+          <Spinner />
+          &gt; Loading System Preferences...
+        </div>
       </AppLayout>
     );
   }
 
   return (
     <AppLayout>
-      <div className="page-enter max-w-xl">
-        <div className="mb-10">
-          <p className="text-eyebrow mb-2">Account</p>
-          <h1 className="font-display text-5xl font-light text-deep">
-            Your <em className="italic text-terra">settings.</em>
-          </h1>
-        </div>
+      <div className="min-h-screen bg-bg-dark text-white pt-12 pb-24 relative">
+        {/* Global CRT Scanline Overlay */}
+        <div className="fixed inset-0 pointer-events-none z-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
+        
+        <div className="max-w-2xl mx-auto px-6 relative z-10 animate-fade-in">
+          
+          {/* Page Header */}
+          <div className="mb-10 border-b border-white/10 pb-8">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-muted mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-neon-blue block" />
+              SYSTEM_CONFIG
+            </p>
+            <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
+              Hardware & <span className="text-neon-blue text-glow-blue italic">Profile.</span>
+            </h1>
+          </div>
 
-        {/* Profile */}
-        <Card padding="md" className="mb-5">
-          <Section title="Profile">
-            <form onSubmit={saveProfile} className="flex flex-col gap-4">
-              <Input label="Display name" value={name} onChange={(e) => setName(e.target.value)} />
-              <Input label="Email" type="email" value={user?.email ?? ""} disabled />
-              <div className="flex items-center gap-3 pt-1">
-                <Button type="submit" variant="primary" size="sm" loading={saving}>Save changes</Button>
+          {/* 1. Profile Panel */}
+          <CyberPanel title="LOCAL_USER_DATA">
+            <form onSubmit={saveProfile} className="flex flex-col gap-5">
+              <div>
+                <label className="block font-mono text-[10px] text-text-muted uppercase tracking-widest mb-2">Display ID</label>
+                <CyberInput value={name} onChange={(e: any) => setName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block font-mono text-[10px] text-text-muted uppercase tracking-widest mb-2">Network Alias (Email)</label>
+                <CyberInput type="email" value={user?.email ?? ""} disabled />
+              </div>
+              <div className="flex items-center gap-4 mt-2">
+                <CyberButton type="submit" loading={saving}>Update Registry</CyberButton>
                 {saved && (
-                  <span className="text-xs flex items-center gap-1 animate-fade-in" style={{ color: "var(--success)" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-                    Saved
+                  <span className="font-mono text-[10px] text-neon-blue uppercase tracking-widest animate-pulse flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-neon-blue inline-block" />
+                    LOG_SAVED
                   </span>
                 )}
               </div>
             </form>
-          </Section>
-        </Card>
+          </CyberPanel>
 
-        <Card padding="md" className="mb-5">
-          <Section title="Partner">
+          {/* 2. Partner / Matrix Panel */}
+          <CyberPanel title="MATRIX_CONNECTION">
             {!couple ? (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-muted">You&apos;re not in a couple yet. Create one to invite your partner.</p>
-                <Button variant="primary" size="sm" loading={creatingCouple} onClick={handleCreateCouple}>
-                  Create couple
-                </Button>
+              <div className="flex flex-col gap-4 items-start">
+                <p className="font-mono text-[10px] text-text-muted uppercase tracking-widest leading-relaxed border-l-2 border-red-500/50 pl-3 py-1">
+                  &gt; ERR: No remote node linked.<br/>
+                  &gt; Generate a matrix instance to invite partner.
+                </p>
+                <CyberButton onClick={handleCreateCouple} loading={creatingCouple}>Initialize Matrix</CyberButton>
               </div>
             ) : couple.status === "pending" ? (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-muted">Waiting for your partner to join.</p>
+              <div className="flex flex-col gap-4">
+                <p className="font-mono text-[10px] text-yellow-400 uppercase tracking-widest animate-pulse flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-yellow-400 block rounded-full" />
+                  AWAITING REMOTE UPLINK...
+                </p>
                 {inviteURL ? (
-                  <div
-                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
-                    style={{ background: "var(--warm)" }}
-                  >
-                    <span className="font-display italic text-sm text-deep truncate">{inviteURL.replace("https://", "")}</span>
-                    <button
-                      onClick={copyInvite}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all shrink-0"
-                      style={{ borderColor: "var(--blush)", color: "var(--mid)" }}
-                    >
-                      {copied ? "Copied!" : "Copy"}
+                  <div className="flex items-center gap-2 bg-bg-dark border border-neon-purple/40 px-4 py-3" style={{ clipPath: polySmall }}>
+                    <span className="flex-1 font-mono text-[10px] text-white opacity-80 truncate select-all">{inviteURL}</span>
+                    <button onClick={copyInvite} className={cn("px-4 py-1.5 font-mono text-[9px] uppercase font-bold tracking-widest border transition-all", copied ? "bg-neon-blue/20 text-neon-blue border-neon-blue" : "bg-neon-purple/20 text-neon-purple border-neon-purple hover:bg-neon-purple hover:text-white")} style={{ clipPath: polySmall }}>
+                      {copied ? "COPIED" : "COPY_KEY"}
                     </button>
                   </div>
                 ) : (
-                  <Button variant="dark" size="sm" loading={generatingInvite} onClick={handleGenerateInvite}>
-                    Generate invite link
-                  </Button>
+                  <div className="mt-2">
+                    <CyberButton onClick={handleGenerateInvite} loading={generatingInvite} variant="secondary">Generate Handshake Key</CyberButton>
+                  </div>
                 )}
               </div>
             ) : (
               <>
-                <Row
-                  label={partnerUser?.name ?? "Partner"}
-                  sub={`${partnerUser?.email ?? ""} · Joined ${new Date(couple.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                <CyberRow
+                  label={partnerUser?.name ?? "REMOTE_NODE"}
+                  sub={`ID: ${partnerUser?.email ?? "UNKNOWN"} // LINKED: ${new Date(couple.created_at).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}`}
                 >
-                  <Badge variant="online">Connected</Badge>
-                </Row>
-                <div className="mt-4">
-                  <p className="text-xs text-muted mb-2.5">Share a new invite link</p>
+                  <CyberBadge text="SYS_SYNCED" status="online" />
+                </CyberRow>
+                <div className="mt-6 pt-5 border-t border-white/5">
+                  <p className="font-mono text-[10px] text-text-muted uppercase tracking-widest mb-3">Force New Key Generation</p>
                   {inviteURL ? (
-                    <div
-                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
-                      style={{ background: "var(--warm)" }}
-                    >
-                      <span className="font-display italic text-sm text-deep truncate">{inviteURL.replace("https://", "")}</span>
-                      <button onClick={copyInvite} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all shrink-0" style={{ borderColor: "var(--blush)", color: "var(--mid)" }}>
-                        {copied ? "Copied!" : "Copy"}
+                    <div className="flex items-center gap-2 bg-bg-dark border border-neon-purple/40 px-4 py-3" style={{ clipPath: polySmall }}>
+                      <span className="flex-1 font-mono text-[10px] text-white opacity-80 truncate">{inviteURL}</span>
+                      <button onClick={copyInvite} className={cn("px-4 py-1.5 font-mono text-[9px] uppercase font-bold tracking-widest border transition-all", copied ? "bg-neon-blue/20 text-neon-blue border-neon-blue" : "bg-neon-purple/20 text-neon-purple border-neon-purple hover:bg-neon-purple hover:text-white")} style={{ clipPath: polySmall }}>
+                        {copied ? "COPIED" : "COPY_KEY"}
                       </button>
                     </div>
                   ) : (
-                    <Button variant="ghost" size="sm" loading={generatingInvite} onClick={handleGenerateInvite}>
-                      Generate new link
-                    </Button>
+                    <CyberButton onClick={handleGenerateInvite} loading={generatingInvite} variant="secondary">Generate Handshake Key</CyberButton>
                   )}
                 </div>
               </>
             )}
-          </Section>
-        </Card>
+          </CyberPanel>
 
-        {/* Frame */}
-        <Card padding="md" className="mb-5">
-          <Section title="Frame">
-            <Row label="Timezone" sub="Used to calculate when midnight resets the frame">
+          {/* 3. Hardware Terminal Panel */}
+          <CyberPanel title="HARDWARE_TERMINAL">
+            <CyberRow label="Server Timezone" sub="Determines 00:00 cycle reset alignment">
               <select
-                className="field-select"
-                style={{ width: "auto", padding: "8px 32px 8px 12px" }}
+                className="bg-bg-dark border border-white/20 text-white font-mono text-[10px] uppercase tracking-widest px-4 py-2 outline-none focus:border-neon-blue hover:border-white/40 cursor-pointer"
+                style={{ clipPath: polySmall }}
                 value={tz}
                 onChange={(e) => handleTzChange(e.target.value)}
                 disabled={!couple || savingTz}
               >
                 {TZ_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value} className="bg-bg-dark text-white">{o.label}</option>
                 ))}
               </select>
-            </Row>
+            </CyberRow>
             {device ? (
               <>
-                <Row
-                  label="Frame MAC"
-                  sub={`${device.mac_address} · ${device.last_seen ? `Last seen ${new Date(device.last_seen).toLocaleTimeString()}` : "Never seen"}`}
+                <CyberRow
+                  label="MAC_ADDRESS_ID"
+                  sub={`${device.mac_address} // LAST_PING: ${device.last_seen ? new Date(device.last_seen).toLocaleTimeString([], { hour12: false }) : "OFFLINE"}`}
                 >
-                  <Badge variant={online ? "online" : "offline"}>{online ? "Online" : "Offline"}</Badge>
-                </Row>
-                <Row label="Firmware" sub={device.firmware ?? "Unknown"}>
-                  <span className="text-xs text-muted">Up to date</span>
-                </Row>
+                  <CyberBadge text={online ? "ONLINE" : "OFFLINE"} status={online ? "online" : "offline"} />
+                </CyberRow>
+                <CyberRow label="Firmware Version" sub={`VER // ${device.firmware ?? "UNKNOWN"}`}>
+                  <CyberBadge text="UP_TO_DATE" status="neutral" />
+                </CyberRow>
               </>
             ) : (
-              <Row label="No frame paired" sub="Pair your frame from the onboarding screen">
-                <Badge variant="offline">Unpaired</Badge>
-              </Row>
+              <CyberRow label="No Hardware Linked" sub="Pair your terminal from the dashboard initialization sequence.">
+                <CyberBadge text="UNPAIRED" status="offline" />
+              </CyberRow>
             )}
-          </Section>
-        </Card>
+          </CyberPanel>
 
-        {/* Notifications */}
-        <Card padding="md" className="mb-5">
-          <Section title="Notifications">
-            <Row label="Push notifications" sub="When your partner submits their answer">
-              <Toggle checked={notifs} onChange={() => setNotifs((v) => !v)} />
-            </Row>
-            <Row label="Daily reminder" sub="Remind you to answer at 8pm in your timezone">
-              <Toggle checked={reminder} onChange={() => setReminder((v) => !v)} />
-            </Row>
-          </Section>
-        </Card>
+          {/* 4. Notifications Panel */}
+          <CyberPanel title="SYSTEM_ALERTS">
+            <CyberRow label="Push Notifications" sub="Receive ping when remote node transmits data">
+              <CyberToggle checked={notifs} onChange={() => setNotifs((v) => !v)} />
+            </CyberRow>
+            <CyberRow label="Diurnal Reminder" sub="Automated prompt at 20:00 local server time">
+              <CyberToggle checked={reminder} onChange={() => setReminder((v) => !v)} />
+            </CyberRow>
+          </CyberPanel>
 
-        {/* Account */}
-        <Card padding="md" className="mb-5">
-          <Section title="Account">
-            <Row label="Sign out" sub="You'll need to sign back in on this device">
-              <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: "/auth" })}>
-                Sign out
-              </Button>
-            </Row>
-            <Row label="Delete account" sub="Permanently removes all your data and disconnects the frame">
-              <Button variant="danger" size="sm">Delete</Button>
-            </Row>
-          </Section>
-        </Card>
+          {/* 5. Danger Zone / Account Panel */}
+          <div className="mt-12 pt-8 border-t border-red-500/20">
+            <h2 className="font-mono text-xs uppercase tracking-[0.3em] text-red-500 mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-red-500 inline-block animate-pulse" />
+              DANGER_ZONE
+            </h2>
+            <div className="bg-red-500/5 border border-red-500/20 p-6" style={{ clipPath: polyClip }}>
+              <CyberRow label="Terminate Session" sub="Clear local credentials and disconnect">
+                <CyberButton variant="secondary" onClick={() => signOut({ redirectUrl: "/auth" })}>
+                  Sign Out
+                </CyberButton>
+              </CyberRow>
+              <CyberRow label="Purge Account Data" sub="Permanently erase all matrices, memories, and hardware links">
+                <CyberButton variant="danger">
+                  Execute Purge
+                </CyberButton>
+              </CyberRow>
+            </div>
+          </div>
+
+        </div>
       </div>
     </AppLayout>
   );
