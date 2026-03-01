@@ -30,7 +30,6 @@ interface UserContextValue {
   isRefreshing: boolean;          // true during background refetch
   error: string | null;
 
-  // ── Refetch ────────────────────────────────────────────────────────────────
   /** Re-fetches /api/users/me + /api/couples/me + /api/devices/me */
   refetch: () => Promise<void>;
   /** Re-fetches only the content list */
@@ -65,7 +64,6 @@ interface UserContextValue {
     caption?: string
   ) => Promise<Content>;
 
-  /** Deletes a queued content item you sent */
   deleteContent: (contentId: string) => Promise<void>;
 }
 

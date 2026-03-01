@@ -3,21 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/clerk/clerk-sdk-go/v2"
 	gorilllaHandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"github.com/martbul/p-ink/internal/api"
+	"github.com/martbul/p-ink/internal/db"
+	tamasvc "github.com/martbul/p-ink/internal/domain/tamagotchi"
+	"github.com/martbul/p-ink/internal/middleware"
+	"github.com/martbul/p-ink/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/clerk/clerk-sdk-go/v2"
-	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
-	"github.com/martbul/p-ink/internal/api"
-	"github.com/martbul/p-ink/internal/db"
-	"github.com/martbul/p-ink/internal/middleware"
-	"github.com/martbul/p-ink/internal/storage"
 )
 
 func main() {
@@ -38,6 +38,8 @@ func main() {
 	defer pool.Close()
 	log.Println("database connected")
 
+	tamaService := tamasvc.NewService(pool)
+
 	var store storage.Store
 	cldStore, err := storage.NewCloudinaryStore()
 	if err != nil {
@@ -45,7 +47,7 @@ func main() {
 		store = &storage.NoopStore{}
 	} else {
 		store = cldStore
-		log.Println("cloudinary connected")
+		log.Println("✓ cloudinary connected")
 	}
 
 	r := mux.NewRouter()
@@ -145,17 +147,16 @@ func main() {
 
 	// ── Tamagotchi decay goroutine ────────────────────────────────────────────
 	// Runs every 12 hours. Subtracts HP from unfed tamagotchis and updates mood.
+
 	go func() {
 		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				if err := db.ApplyDecay(context.Background(), pool); err != nil {
-					log.Printf("[decay] error: %v", err)
-				} else {
-					log.Println("[decay] tick applied")
-				}
+		for range ticker.C {
+			results, err := tamaService.ApplyDecay(context.Background())
+			if err != nil {
+				log.Printf("[decay] error: %v", err)
+			} else {
+				log.Printf("[decay] tick — %d tamagotchis affected", len(results))
 			}
 		}
 	}()

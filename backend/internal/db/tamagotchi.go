@@ -646,3 +646,44 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+
+
+type TamagotchiUpdate struct {
+	ID        uuid.UUID
+	XP        int
+	Health    int
+	MaxHealth int
+	Level     int
+	Mood      models.TamagotchiMood
+	LastFedAt time.Time
+}
+
+func UpdateTamagotchiState(ctx context.Context, pool *pgxpool.Pool, u TamagotchiUpdate) error {
+	_, err := pool.Exec(ctx, `
+		UPDATE tamagotchis
+		SET xp         = $1,
+		    health     = $2,
+		    max_health = $3,
+		    level      = $4,
+		    mood       = $5,
+		    last_fed_at = $6
+		WHERE id = $7
+	`, u.XP, u.Health, u.MaxHealth, u.Level, string(u.Mood), u.LastFedAt, u.ID)
+	return err
+}
+
+
+func GetShopItem(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*models.TamagotchiItem, error) {
+	row := pool.QueryRow(ctx, `
+		SELECT id, type, name, description, xp_cost, preview_url, species_lock, unlocks_at_level
+		FROM tamagotchi_items WHERE id = $1
+	`, id)
+	var i models.TamagotchiItem
+	err := row.Scan(&i.ID, &i.Type, &i.Name, &i.Description, &i.XPCost,
+		&i.PreviewURL, &i.SpeciesLock, &i.UnlocksAtLevel)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	return &i, err
+}

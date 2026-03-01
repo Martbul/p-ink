@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/providers/UserProvider";
 
 const NAV = [
   {
@@ -59,6 +60,8 @@ const NAV = [
 ];
 
 function TopBar() {
+  const {partnerUser} = useUser();
+
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-10 h-16 bg-cream/90 backdrop-blur-md border-b border-warm">
       <Link
@@ -73,14 +76,12 @@ function TopBar() {
           -ink
         </em>
       </Link>
-
-      <div className="flex items-center gap-3">
-        {/* Partner pill */}
+        {partnerUser && (
+          <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warm border border-blush text-xs text-mid">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse-dot" />
-          Alex is online
+          {partnerUser.name} is online
         </div>
-        {/* Avatar */}
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-display"
           style={{
@@ -90,6 +91,9 @@ function TopBar() {
           S
         </div>
       </div>
+        )}
+
+      
     </header>
   );
 }
