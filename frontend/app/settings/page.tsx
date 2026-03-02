@@ -232,7 +232,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-text-muted uppercase tracking-widest mb-2">Network Alias (Email)</label>
-                <CyberInput type="email" value={user?.email ?? ""} disabled />
+                {/* <CyberInput type="email" value={user?.email ?? ""} disabled /> */}
               </div>
               <div className="flex items-center gap-4 mt-2">
                 <CyberButton type="submit" loading={saving}>Update Registry</CyberButton>
