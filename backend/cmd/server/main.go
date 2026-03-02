@@ -116,16 +116,16 @@ func main() {
 	}
 
 	//TODO: regex the device origins
-	iotDeviceURL := "http://custom-iot-device.local"
+	// iotDeviceURL := "http://custom-iot-device.local"
 
-	allowedOrigins := []string{
-		frontendURL,
-		"http://localhost:7777",
-		iotDeviceURL,
-	}
+	// allowedOrigins := []string{
+	// 	frontendURL,
+	// 	"http://localhost:7777",
+	// 	iotDeviceURL,
+	// }
 
 	corsHandler := gorilllaHandlers.CORS(
-		gorilllaHandlers.AllowedOrigins(allowedOrigins),
+		gorilllaHandlers.AllowedOrigins([]string{"*"}),
 		gorilllaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		gorilllaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Pprof-Secret"}),
 		gorilllaHandlers.ExposedHeaders([]string{"Content-Length"}),

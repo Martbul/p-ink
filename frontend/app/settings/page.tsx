@@ -7,11 +7,15 @@ import { useUser } from "@/providers/UserProvider";
 import { api } from "@/api";
 import { cn } from "@/lib/utils";
 
-// --- Cyberpunk Shape Utilities ---
 const polyClip = "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
 const polySmall = "polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)";
 
-// --- Custom Cyberpunk UI Components ---
+const handlePurge = async () => {
+  if (!confirm("⚠️ Are you sure you want to purge your account? This action is irreversible and will delete all your data, including matrices, memories, and hardware links.")) {
+    return;
+  }
+}
+
 function CyberPanel({ children, title }: { children: React.ReactNode, title: string }) {
   return (
     <div className="bg-surface-dark border border-white/10 p-6 relative mb-8 hover:border-white/20 transition-colors" style={{ clipPath: polyClip }}>
@@ -37,7 +41,7 @@ function CyberRow({ label, sub, children }: { label: string; sub?: string; child
   );
 }
 
-function CyberInput({ value, onChange, disabled, type = "text", placeholder = "" }: any) {
+function CyberInput({ value, onChange, disabled, type = "text", placeholder = "" }: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; disabled?: boolean; type?: string; placeholder?: string }) {
   return (
     <input
       type={type}
@@ -51,7 +55,7 @@ function CyberInput({ value, onChange, disabled, type = "text", placeholder = ""
   );
 }
 
-function CyberButton({ onClick, loading, children, variant = "primary" }: any) {
+function CyberButton({ onClick, loading, children, variant = "primary" }: { onClick: () => void; loading?: boolean; children: React.ReactNode; variant?: "primary" | "secondary" | "danger" }) {
   const styles = {
     primary: "bg-neon-pink/10 border-neon-pink text-neon-pink hover:bg-neon-pink hover:text-white shadow-[0_0_10px_rgba(255,42,109,0.2)]",
     secondary: "bg-surface border-white/20 text-text-muted hover:border-neon-blue hover:text-neon-blue hover:bg-neon-blue/10",
@@ -224,7 +228,7 @@ export default function SettingsPage() {
             <form onSubmit={saveProfile} className="flex flex-col gap-5">
               <div>
                 <label className="block font-mono text-[10px] text-text-muted uppercase tracking-widest mb-2">Display ID</label>
-                <CyberInput value={name} onChange={(e: any) => setName(e.target.value)} />
+                <CyberInput value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} />
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-text-muted uppercase tracking-widest mb-2">Network Alias (Email)</label>
@@ -353,7 +357,7 @@ export default function SettingsPage() {
                 </CyberButton>
               </CyberRow>
               <CyberRow label="Purge Account Data" sub="Permanently erase all matrices, memories, and hardware links">
-                <CyberButton variant="danger">
+                <CyberButton onClick={handlePurge} variant="danger">
                   Execute Purge
                 </CyberButton>
               </CyberRow>
