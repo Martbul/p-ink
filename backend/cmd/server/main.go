@@ -125,7 +125,12 @@ func main() {
 	// }
 
 	corsHandler := gorilllaHandlers.CORS(
-		gorilllaHandlers.AllowedOrigins([]string{"*"}),
+    gorilllaHandlers.AllowedOrigins([]string{
+        frontendURL,
+        "http://localhost:7777",
+        "http://localhost:3000",
+        "https://p-ink.strct.org",
+    }),
 		gorilllaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		gorilllaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Pprof-Secret"}),
 		gorilllaHandlers.ExposedHeaders([]string{"Content-Length"}),
