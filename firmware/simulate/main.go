@@ -422,6 +422,7 @@ const (
 
 func main() {
 	mac      := flag.String("mac",      envOr("SIM_MAC",      "AA:BB:CC:DD:EE:FF"), "Frame MAC address")
+	// backend  := flag.String("backend",  envOr("SIM_BACKEND",  "https://api.p-ink.strct.org"), "Backend base URL")
 	backend  := flag.String("backend",  envOr("SIM_BACKEND",  "http://localhost:7111"), "Backend base URL")
 	firmware := flag.String("firmware", envOr("SIM_FIRMWARE", "1.0.0"), "Firmware version string")
 	flag.Parse()
