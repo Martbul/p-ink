@@ -11,6 +11,7 @@ import (
 	"github.com/martbul/p-ink/internal/models"
 )
 
+// ─── Users ────────────────────────────────────────────────────────────────────
 
 func GetUserByClerkID(ctx context.Context, pool *pgxpool.Pool, clerkID string) (*models.User, error) {
 	u := &models.User{}
@@ -49,6 +50,7 @@ func UpsertUser(ctx context.Context, pool *pgxpool.Pool, clerkID, email, name st
 	return u, err
 }
 
+// ─── Couples ──────────────────────────────────────────────────────────────────
 
 func GetCoupleByUserID(ctx context.Context, pool *pgxpool.Pool, userID uuid.UUID) (*models.Couple, error) {
 	c := &models.Couple{}
@@ -105,6 +107,7 @@ func UpdateCoupleTimezone(ctx context.Context, pool *pgxpool.Pool, coupleID uuid
 	return err
 }
 
+// ─── Invite tokens ────────────────────────────────────────────────────────────
 
 func CreateInviteToken(ctx context.Context, pool *pgxpool.Pool, coupleID, createdBy uuid.UUID) (*models.InviteToken, error) {
 	t := &models.InviteToken{}
@@ -137,7 +140,13 @@ func UseInviteToken(ctx context.Context, pool *pgxpool.Pool, token string, usedB
 	return err
 }
 
+// ─── Devices ──────────────────────────────────────────────────────────────────
+//
+// Model: one device per user (enforced by unique index on owner_id).
+// A couple therefore has up to two devices — one per partner.
+// Both carry couple_id once the couple is active.
 
+// GetDeviceByMAC looks up a device by its MAC address.
 func GetDeviceByMAC(ctx context.Context, pool *pgxpool.Pool, mac string) (*models.Device, error) {
 	d := &models.Device{}
 	err := pool.QueryRow(ctx,
@@ -150,6 +159,7 @@ func GetDeviceByMAC(ctx context.Context, pool *pgxpool.Pool, mac string) (*model
 	return d, err
 }
 
+// GetDeviceByOwner returns the device owned by ownerID, or nil if unpaired.
 func GetDeviceByOwner(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID) (*models.Device, error) {
 	d := &models.Device{}
 	err := pool.QueryRow(ctx,
@@ -162,6 +172,31 @@ func GetDeviceByOwner(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID
 	return d, err
 }
 
+// GetDevicesByCouple returns both devices (0–2) linked to a couple.
+func GetDevicesByCouple(ctx context.Context, pool *pgxpool.Pool, coupleID uuid.UUID) ([]*models.Device, error) {
+	rows, err := pool.Query(ctx,
+		`SELECT id, owner_id, couple_id, mac_address, label, last_seen, firmware, created_at
+		 FROM devices WHERE couple_id = $1
+		 ORDER BY created_at ASC`, coupleID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*models.Device
+	for rows.Next() {
+		d := &models.Device{}
+		if err := rows.Scan(&d.ID, &d.OwnerID, &d.CoupleID, &d.MacAddress, &d.Label, &d.LastSeen, &d.Firmware, &d.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// CreateDevice registers a new device for ownerID.
+// coupleID is non-nil when the user is already in a couple at pairing time.
 func CreateDevice(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID, mac string, coupleID *uuid.UUID) (*models.Device, error) {
 	d := &models.Device{}
 	err := pool.QueryRow(ctx,
@@ -173,6 +208,7 @@ func CreateDevice(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID, ma
 	return d, err
 }
 
+// TouchDevice updates last_seen and firmware version.
 func TouchDevice(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID, firmware string) error {
 	_, err := pool.Exec(ctx,
 		`UPDATE devices SET last_seen = now(), firmware = $2 WHERE id = $1`,
@@ -180,11 +216,27 @@ func TouchDevice(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID, fi
 	return err
 }
 
+// LinkDeviceToCouple sets couple_id on a single device.
 func LinkDeviceToCouple(ctx context.Context, pool *pgxpool.Pool, deviceID, coupleID uuid.UUID) error {
 	_, err := pool.Exec(ctx,
 		`UPDATE devices SET couple_id = $2 WHERE id = $1`, deviceID, coupleID)
 	return err
 }
+
+// LinkAllDevicesToCouple links both partners' existing devices to the couple
+// in one query. Called when the couple activates so neither partner has to
+// re-pair their device after joining.
+func LinkAllDevicesToCouple(ctx context.Context, pool *pgxpool.Pool, coupleID, userAID, userBID uuid.UUID) error {
+	_, err := pool.Exec(ctx,
+		`UPDATE devices
+		 SET couple_id = $1
+		 WHERE owner_id = $2 OR owner_id = $3`,
+		coupleID, userAID, userBID,
+	)
+	return err
+}
+
+// ─── Content ──────────────────────────────────────────────────────────────────
 
 func GetNextQueued(ctx context.Context, pool *pgxpool.Pool, sentTo uuid.UUID) (*models.Content, error) {
 	c := &models.Content{}
@@ -269,6 +321,7 @@ func DeleteContent(ctx context.Context, pool *pgxpool.Pool, contentID, sentBy uu
 	return nil
 }
 
+// ─── Frame state ──────────────────────────────────────────────────────────────
 
 func GetFrameState(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID) (*models.FrameState, error) {
 	fs := &models.FrameState{}
@@ -287,9 +340,9 @@ func UpsertFrameState(ctx context.Context, pool *pgxpool.Pool, fs *models.FrameS
 		`INSERT INTO frame_state (device_id, content_id, image_url, image_hash, expires_at)
 		 VALUES ($1, $2, $3, $4, $5)
 		 ON CONFLICT (device_id) DO UPDATE
-		   SET content_id = EXCLUDED.content_id,
-		       image_url  = EXCLUDED.image_url,
-		       image_hash = EXCLUDED.image_hash,
+		   SET content_id  = EXCLUDED.content_id,
+		       image_url   = EXCLUDED.image_url,
+		       image_hash  = EXCLUDED.image_hash,
 		       composed_at = now(),
 		       expires_at  = EXCLUDED.expires_at`,
 		fs.DeviceID, fs.ContentID, fs.ImageURL, fs.ImageHash, fs.ExpiresAt,
@@ -297,6 +350,7 @@ func UpsertFrameState(ctx context.Context, pool *pgxpool.Pool, fs *models.FrameS
 	return err
 }
 
+// ─── Push subscriptions ───────────────────────────────────────────────────────
 
 func UpsertPushSubscription(ctx context.Context, pool *pgxpool.Pool, userID uuid.UUID, endpoint, p256dh, auth string) error {
 	_, err := pool.Exec(ctx,
@@ -328,6 +382,8 @@ func GetPushSubscriptions(ctx context.Context, pool *pgxpool.Pool, userID uuid.U
 	}
 	return subs, rows.Err()
 }
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
 
 func NextMidnight(tz string) (time.Time, error) {
 	loc, err := time.LoadLocation(tz)

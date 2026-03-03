@@ -94,6 +94,19 @@ export interface DeviceResponse {
   frame_state: FrameState | null;
 }
 
+/**
+ * GET /api/devices/couple — returns both devices in the couple (0–2).
+ * Each entry includes the device and its current frame state.
+ */
+export interface DeviceWithState {
+  device: Device;
+  frame_state: FrameState | null;
+}
+
+export interface CoupleDevicesResponse {
+  devices: DeviceWithState[];
+}
+
 export interface ContentListResponse {
   items: Content[];
 }
@@ -116,4 +129,4 @@ export interface PushSubscriptionsResponse {
 
 export interface ApiError {
   error: string;
-}
+} 

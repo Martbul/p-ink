@@ -157,6 +157,14 @@ func GetInviteInfo(pool *pgxpool.Pool) http.HandlerFunc {
 }
 
 // JoinCouple  POST /api/couples/join
+//
+// Activates the couple and immediately links BOTH partners' existing devices
+// to it. Either partner may have paired their frame before or after the invite
+// is accepted — both cases are handled:
+//
+//   - Device already paired before joining → linked here via LinkAllDevicesToCouple
+//   - Device paired after joining          → linked at PairDevice time (couple_id
+//                                            is set because the user is now in a couple)
 func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
@@ -210,15 +218,11 @@ func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		_ = db.UseInviteToken(r.Context(), pool, body.Token, user.ID)
 
-		// Create both Tamagotchis now that the couple is active.
-		// couple.UserAID owns theirs, user.ID (the joiner) owns theirs.
-		// Each one is controlled by the other.
-		_ = db.CreateTamagotchisForCouple(r.Context(), pool, couple.ID, couple.UserAID, user.ID)
+		// Link BOTH partners' devices (if already paired) to this couple.
+		_ = db.LinkAllDevicesToCouple(r.Context(), pool, couple.ID, couple.UserAID, user.ID)
 
-		// Link the joining user's device if they already have one
-		if device, _ := db.GetDeviceByOwner(r.Context(), pool, user.ID); device != nil {
-			_ = db.LinkDeviceToCouple(r.Context(), pool, device.ID, couple.ID)
-		}
+		// Create both Tamagotchis now that the couple is active.
+		_ = db.CreateTamagotchisForCouple(r.Context(), pool, couple.ID, couple.UserAID, user.ID)
 
 		OK(w, updated)
 	}

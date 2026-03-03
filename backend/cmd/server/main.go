@@ -83,9 +83,14 @@ func main() {
 	protected.HandleFunc("/api/couples/join", api.JoinCouple(pool)).
 		Methods(http.MethodPost)
 
+	// Device routes.
+	// Design: one device per user — a couple therefore has two devices total.
 	protected.HandleFunc("/api/devices/pair", api.PairDevice(pool)).
 		Methods(http.MethodPost)
 	protected.HandleFunc("/api/devices/me", api.GetMyDevice(pool)).
+		Methods(http.MethodGet)
+	// Returns both devices in the couple (for settings / status display).
+	protected.HandleFunc("/api/devices/couple", api.GetCoupleDevices(pool)).
 		Methods(http.MethodGet)
 
 	protected.HandleFunc("/api/content", api.ListContent(pool)).
@@ -115,22 +120,13 @@ func main() {
 		frontendURL = "http://localhost:7777"
 	}
 
-	//TODO: regex the device origins
-	// iotDeviceURL := "http://custom-iot-device.local"
-
-	// allowedOrigins := []string{
-	// 	frontendURL,
-	// 	"http://localhost:7777",
-	// 	iotDeviceURL,
-	// }
-
 	corsHandler := gorilllaHandlers.CORS(
-    gorilllaHandlers.AllowedOrigins([]string{
-        frontendURL,
-        "http://localhost:7777",
-        "http://localhost:3000",
-        "https://p-ink.strct.org",
-    }),
+		gorilllaHandlers.AllowedOrigins([]string{
+			frontendURL,
+			"http://localhost:7777",
+			"http://localhost:3000",
+			"https://p-ink.strct.org",
+		}),
 		gorilllaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		gorilllaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Pprof-Secret"}),
 		gorilllaHandlers.ExposedHeaders([]string{"Content-Length"}),
@@ -150,9 +146,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// ── Tamagotchi decay goroutine ────────────────────────────────────────────
-	// Runs every 12 hours. Subtracts HP from unfed tamagotchis and updates mood.
-
+	// Tamagotchi decay goroutine — runs every 12 hours.
 	go func() {
 		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()

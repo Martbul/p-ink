@@ -88,7 +88,7 @@ func NewSimulator(mac, backend, firmware string) *Simulator {
 		BackendURL:   strings.TrimRight(backend, "/"),
 		Firmware:     firmware,
 		BootCount:    0,
-		pollInterval: 10 * time.Second, // start fast for dev; backend will update this
+		pollInterval: 20 * time.Second, // start fast for dev; backend will update this
 		client:       &http.Client{Timeout: 15 * time.Second},
 	}
 }
@@ -422,8 +422,8 @@ const (
 
 func main() {
 	mac      := flag.String("mac",      envOr("SIM_MAC",      "AA:BB:CC:DD:EE:FF"), "Frame MAC address")
-	// backend  := flag.String("backend",  envOr("SIM_BACKEND",  "https://api.p-ink.strct.org"), "Backend base URL")
-	backend  := flag.String("backend",  envOr("SIM_BACKEND",  "http://localhost:7111"), "Backend base URL")
+	backend  := flag.String("backend",  envOr("SIM_BACKEND",  "https://api.p-ink.strct.org"), "Backe/nd base URL")
+	// backend  := flag.String("backend",  envOr("SIM_BACKEND",  "http://localhost:7111"), "Backend base URL")
 	firmware := flag.String("firmware", envOr("SIM_FIRMWARE", "1.0.0"), "Firmware version string")
 	flag.Parse()
 

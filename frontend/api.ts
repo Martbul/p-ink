@@ -3,10 +3,6 @@
  *
  * Every function maps 1:1 to a backend route.
  * Auth token is fetched from Clerk on each call — no manual token handling needed.
- *
- * Usage:
- *   import { api } from "@/lib/api";
- *   const me = await api.getMe(token);
  */
 
 import type {
@@ -17,6 +13,7 @@ import type {
   InviteInfoResponse,
   DeviceResponse,
   Device,
+  CoupleDevicesResponse,
   ContentListResponse,
   Content,
   PushSubscriptionsResponse,
@@ -47,7 +44,6 @@ async function request<T>(
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
-      // Don't set Content-Type for FormData — browser sets it with boundary
       ...(options.body instanceof FormData
         ? {}
         : { "Content-Type": "application/json" }),
@@ -66,7 +62,6 @@ async function request<T>(
     throw new ApiError(res.status, message);
   }
 
-  // 204 No Content
   if (res.status === 204) return undefined as T;
 
   return res.json() as Promise<T>;
@@ -134,10 +129,20 @@ export const api = {
   },
 
   // ── Devices ────────────────────────────────────────────────────────────────
+  //
+  // Model: one device per user. A couple has two devices total.
 
-  /** GET /api/devices/me — returns device + current frame_state */
+  /** GET /api/devices/me — returns the current user's own device + frame_state */
   getDevice(token: string): Promise<DeviceResponse> {
     return request("/api/devices/me", token);
+  },
+
+  /**
+   * GET /api/devices/couple — returns both devices in the couple (0–2),
+   * each with their frame_state. For the settings / status page.
+   */
+  getCoupleDevices(token: string): Promise<CoupleDevicesResponse> {
+    return request("/api/devices/couple", token);
   },
 
   /** POST /api/devices/pair — link a MAC address to this user account */
@@ -161,7 +166,6 @@ export const api = {
 
   /**
    * POST /api/content/message — send a text message to your partner's frame.
-   * JSON only, no file upload needed.
    */
   sendMessage(
     token: string,
@@ -176,11 +180,6 @@ export const api = {
 
   /**
    * POST /api/content — upload a photo or drawing.
-   * Sends multipart/form-data.
-   *
-   * @param file   The File object from an <input type="file"> or drag-and-drop
-   * @param type   "photo" | "drawing"
-   * @param caption Optional caption string
    */
   uploadContent(
     token: string,
@@ -215,11 +214,6 @@ export const api = {
 
   /**
    * POST /api/notifications/subscribe
-   * Pass the raw PushSubscription object from the Web Push API.
-   *
-   * Usage:
-   *   const sub = await registration.pushManager.subscribe({ ... });
-   *   await api.subscribePush(token, sub.toJSON());
    */
   subscribePush(
     token: string,

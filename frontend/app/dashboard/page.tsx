@@ -433,6 +433,7 @@ export default function DashboardPage() {
   }
 
   const firstName = user?.name?.split(" ")[0]?.toUpperCase() ?? "USER";
+  const lastName = user?.name?.split(" ").slice(1).join(" ") ?? "";
   const partnerName = partnerUser?.name?.split(" ")[0]?.toUpperCase() ?? "UNKNOWN_NODE";
   const coupleActive = couple?.status === "active";
   const needsPairing = !device;
@@ -441,12 +442,10 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-bg-dark text-white relative selection:bg-neon-blue/30 selection:text-white pt-12 pb-24">
-        {/* Global CRT Scanline Overlay applied within dashboard context */}
         <div className="fixed inset-0 pointer-events-none z-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
         
         <div className="max-w-4xl mx-auto px-6 relative z-10 animate-fade-in">
           
-          {/* Dashboard Header */}
           <div className="mb-12 border-b border-white/10 pb-8 relative">
             <div className="absolute left-0 bottom-0 w-1/3 h-px bg-gradient-to-r from-neon-blue to-transparent" />
             
@@ -455,7 +454,7 @@ export default function DashboardPage() {
               SYSTEM_TIME: {today}
             </p>
             <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
-              User_Link: <span className="text-neon-blue text-glow-blue italic">[{firstName}]</span>
+              User_Link: <span className="text-neon-blue text-glow-blue italic">[{firstName} {lastName}]</span>
             </h1>
             
             {coupleActive && (
