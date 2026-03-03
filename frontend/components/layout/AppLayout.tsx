@@ -40,6 +40,17 @@ const NAV = [
       </svg>
     ),
   },
+    {
+    href: "/device",
+    label: "Device",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <rect x="2" y="7" width="20" height="14" rx="2" />
+        <line x1="16" y1="3" x2="16" y2="7" />
+        <line x1="8" y1="3" x2="8" y2="7" />
+      </svg>
+    ),
+  },
   {
     href: "/settings",
     label: "Settings",

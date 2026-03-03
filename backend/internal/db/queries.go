@@ -172,12 +172,17 @@ func GetDeviceByOwner(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID
 	return d, err
 }
 
-// GetDevicesByCouple returns both devices (0–2) linked to a couple.
 func GetDevicesByCouple(ctx context.Context, pool *pgxpool.Pool, coupleID uuid.UUID) ([]*models.Device, error) {
 	rows, err := pool.Query(ctx,
 		`SELECT id, owner_id, couple_id, mac_address, label, last_seen, firmware, created_at
-		 FROM devices WHERE couple_id = $1
-		 ORDER BY created_at ASC`, coupleID,
+FROM devices
+WHERE couple_id = $1
+   OR owner_id IN (
+     SELECT user_a_id FROM couples WHERE id = $1
+     UNION
+     SELECT user_b_id FROM couples WHERE id = $1
+   )
+ORDER BY created_at ASC`, coupleID,
 	)
 	if err != nil {
 		return nil, err
