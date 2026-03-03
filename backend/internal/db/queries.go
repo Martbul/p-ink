@@ -399,3 +399,9 @@ func NextMidnight(tz string) (time.Time, error) {
 	next := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, loc)
 	return next.UTC(), nil
 }
+
+
+func DeleteCouple(ctx context.Context, pool *pgxpool.Pool, coupleID uuid.UUID) error {
+	_, err := pool.Exec(ctx, `DELETE FROM couples WHERE id = $1`, coupleID)
+	return err
+}

@@ -158,13 +158,11 @@ func GetInviteInfo(pool *pgxpool.Pool) http.HandlerFunc {
 
 // JoinCouple  POST /api/couples/join
 //
-// Activates the couple and immediately links BOTH partners' existing devices
-// to it. Either partner may have paired their frame before or after the invite
-// is accepted — both cases are handled:
-//
-//   - Device already paired before joining → linked here via LinkAllDevicesToCouple
-//   - Device paired after joining          → linked at PairDevice time (couple_id
-//                                            is set because the user is now in a couple)
+// Accepts an invite token and activates the couple.
+// If the joining user is currently in a PENDING couple (one they created
+// themselves but nobody joined yet), that couple is silently deleted first
+// so they can join the new one. Active couples are never deleted this way —
+// the user must explicitly leave first.
 func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
@@ -195,10 +193,31 @@ func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 
-		existing, _ := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if existing != nil {
-			Error(w, http.StatusConflict, "already in a couple")
+		// Check if the joiner already belongs to a couple.
+		existing, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
+		if err != nil {
+			Error(w, http.StatusInternalServerError, "db error")
 			return
+		}
+		if existing != nil {
+			// Only allow proceeding if the existing couple is still pending
+			// (nobody has joined it yet). In that case, delete it so the user
+			// can join the new couple cleanly.
+			if existing.Status != "pending" {
+				Error(w, http.StatusConflict, "already in an active couple")
+				return
+			}
+			// Make sure they're not joining their own invite
+			if existing.ID == invite.CoupleID {
+				Error(w, http.StatusBadRequest, "cannot join your own couple")
+				return
+			}
+			// Delete the stale pending couple (cascade deletes invite_tokens,
+			// devices.couple_id is SET NULL via FK, tamagotchis cascade).
+			if err := db.DeleteCouple(r.Context(), pool, existing.ID); err != nil {
+				Error(w, http.StatusInternalServerError, "could not clear pending couple")
+				return
+			}
 		}
 
 		couple, err := db.GetCoupleByID(r.Context(), pool, invite.CoupleID)

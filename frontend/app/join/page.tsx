@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
@@ -14,17 +14,19 @@ function JoinPageInner() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
 
-  const { isSignedIn, isLoaded: clerkLoaded } = useAuth();
-  const { joinCouple, couple, isLoading: userLoading } = useUser();
+  const { isSignedIn, isLoaded: clerkLoaded, getToken } = useAuth();
+  const { couple, isLoading: userLoading, refetch } = useUser();
 
   const [info, setInfo] = useState<InviteInfoResponse | null>(null);
   const [fetchError, setFetchError] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
+  // Guard so the join effect only fires once
+  const hasJoinedRef = useRef(false);
 
-  // Fetch invite info — only runs when token is present
+  // ── 1. Fetch invite info (public, no auth needed) ──────────────────────────
   useEffect(() => {
-    if (!token) return; // no token → render handles it below
+    if (!token) return;
     let cancelled = false;
     api
       .getInviteInfo(token)
@@ -41,31 +43,52 @@ function JoinPageInner() {
     return () => { cancelled = true; };
   }, [token]);
 
-  // Auto-join once signed in and info is loaded
+  // ── 2. Auto-join once signed in + info loaded ──────────────────────────────
+  // Key fix: we do NOT redirect to /dashboard if couple already exists here —
+  // we only redirect AFTER a successful join (or if couple was already active
+  // for THIS token, meaning the user already joined successfully before).
   useEffect(() => {
-    if (!clerkLoaded || userLoading || !isSignedIn || !info || joining) return;
-    if (couple) {
+    if (!clerkLoaded || userLoading) return;     // Clerk / DB not ready yet
+    if (!isSignedIn) return;                     // Not signed in — show preview
+    if (!info) return;                           // Invite not loaded yet
+    if (joining || hasJoinedRef.current) return; // Already in progress
+
+    // If this user is already in an ACTIVE couple, they may have just
+    // completed the join flow and been redirected back here — send them home.
+    if (couple?.status === "active") {
       router.replace("/dashboard");
       return;
     }
-    let cancelled = false;
+
+    // If they're in a PENDING couple (they created one themselves), they
+    // can't join someone else's — show a meaningful error instead of silently
+    // redirecting away.
+    if (couple && couple.status !== "active") {
+      setJoinError("You're already in a pending couple. You cannot join another.");
+      return;
+    }
+
+    // Happy path: signed in, no couple, valid invite → join
+    hasJoinedRef.current = true;
+    setJoining(true);
+
     async function doJoin() {
-      setJoining(true);
       try {
-        await joinCouple(token);
-        if (!cancelled) router.replace("/dashboard");
+        const t = await getToken();
+        if (!t) throw new Error("Not authenticated");
+        await api.joinCouple(t, token);
+        await refetch();
+        router.replace("/dashboard");
       } catch (err) {
-        if (!cancelled) {
-          setJoinError((err as Error).message ?? "Could not join couple");
-          setJoining(false);
-        }
+        hasJoinedRef.current = false; // allow retry
+        setJoinError((err as Error).message ?? "Could not join couple");
+        setJoining(false);
       }
     }
     doJoin();
-    return () => { cancelled = true; };
-  }, [clerkLoaded, userLoading, isSignedIn, info, couple, token, joinCouple, router, joining]);
+  }, [clerkLoaded, userLoading, isSignedIn, info, couple, token, joining, getToken, refetch, router]);
 
-  // ── No token in URL ────────────────────────────────────────────────────────
+  // ── Render: no token ───────────────────────────────────────────────────────
   if (!token) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-6 bg-cream">
@@ -77,7 +100,7 @@ function JoinPageInner() {
     );
   }
 
-  // ── Loading / joining ──────────────────────────────────────────────────────
+  // ── Render: loading / joining ──────────────────────────────────────────────
   if ((!info && !fetchError) || (isSignedIn && (userLoading || joining))) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-cream">
@@ -89,18 +112,18 @@ function JoinPageInner() {
     );
   }
 
-  // ── Errors ─────────────────────────────────────────────────────────────────
+  // ── Render: errors ─────────────────────────────────────────────────────────
   const error = fetchError || joinError;
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-6 bg-cream">
         <p className="font-display text-3xl italic text-rose text-center">{error}</p>
-        <Link href="/"><Button variant="ghost">Back to home</Button></Link>
+        <Link href="/dashboard"><Button variant="ghost">Go to dashboard</Button></Link>
       </div>
     );
   }
 
-  // ── Not signed in — invite preview ─────────────────────────────────────────
+  // ── Render: not signed in — invite preview ─────────────────────────────────
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
