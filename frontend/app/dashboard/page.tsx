@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Spinner } from "@/components/ui";
 import { useUser } from "@/providers/UserProvider";
+import { useModal, ModalPresets } from "@/components/ui/info_modal";
 import { api } from "@/api";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -30,87 +31,126 @@ function QRCode({ url, size = 160 }: { url: string; size?: number }) {
 // ─── Pair Frame Panel ─────────────────────────────────────────────────────────
 function PairFramePanel({ onPaired }: { onPaired: () => void }) {
   const { pairDevice } = useUser();
-  const [mac, setMac]     = useState("");
+  const modal = useModal();
+  const [mac, setMac]         = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [open, setOpen]   = useState(false);
+  const [open, setOpen]       = useState(false);
 
   async function handlePair() {
     if (!mac.trim()) return;
-    setLoading(true); setError("");
+    setLoading(true);
     try {
       await pairDevice(mac.trim().toUpperCase());
       setOpen(false);
-      onPaired();
+
+      // ── Success modal ──────────────────────────────────────────────────────
+      modal.open({
+        ...ModalPresets.pairSuccess(mac.trim().toUpperCase()),
+        actions: [
+          {
+            label: "Continue →",
+            variant: "primary",
+            onClick: () => {
+              modal.close();
+              onPaired();
+            },
+          },
+        ],
+      });
     } catch (err) {
-      setError((err as Error).message ?? "Uplink failed");
-    } finally { setLoading(false); }
+      const reason = (err as Error).message ?? "Uplink failed";
+
+      // ── Error modal ────────────────────────────────────────────────────────
+      modal.open({
+        ...ModalPresets.pairError(reason),
+        actions: [
+          {
+            label: "Dismiss",
+            variant: "secondary",
+            onClick: () => modal.close(),
+          },
+          {
+            label: "Retry →",
+            variant: "primary",
+            onClick: () => {
+              modal.close();
+              setOpen(true);
+            },
+          },
+        ],
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div
-      onClick={() => { if (!open) setOpen(true); }}
-      className={`group relative bg-surface-dark border border-neon-blue/30 p-7 transition-all duration-500 hover:border-neon-blue/70 hover:shadow-[0_0_20px_rgba(5,217,232,0.15)] ${!open ? "cursor-pointer" : ""}`}
-      style={{ clipPath: polyClip }}
-    >
-      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(5,217,232,0.03)_50%,transparent_75%)] bg-[length:10px_10px] pointer-events-none" />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center bg-neon-blue/10 border border-neon-blue/50 text-neon-blue" style={{ clipPath: polySmall }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <>
+      {modal.Modal}
+
+      <div
+        onClick={() => { if (!open) setOpen(true); }}
+        className={`group relative bg-surface-dark border border-neon-blue/30 p-7 transition-all duration-500 hover:border-neon-blue/70 hover:shadow-[0_0_20px_rgba(5,217,232,0.15)] ${!open ? "cursor-pointer" : ""}`}
+        style={{ clipPath: polyClip }}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(5,217,232,0.03)_50%,transparent_75%)] bg-[length:10px_10px] pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center bg-neon-blue/10 border border-neon-blue/50 text-neon-blue" style={{ clipPath: polySmall }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-neon-blue/70">INIT_SEQ: 01</p>
+                <h3 className="font-display text-xl uppercase font-bold text-white tracking-wide">Hardware Link</h3>
+              </div>
             </div>
-            <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-neon-blue/70">INIT_SEQ: 01</p>
-              <h3 className="font-display text-xl uppercase font-bold text-white tracking-wide">Hardware Link</h3>
+            <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-surface border border-white/10" style={{ clipPath: polySmall }}>
+              <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+              <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Awaiting</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-surface border border-white/10" style={{ clipPath: polySmall }}>
-            <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Awaiting</span>
-          </div>
+          <p className="text-sm font-mono text-text-muted mb-6 leading-relaxed">&gt; Power up e-ink terminal. Connect to local network. Input displayed MAC sequence below.</p>
+          {!open ? (
+            <div className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-widest text-neon-blue hover:text-white transition-colors pointer-events-none">
+              <span className="w-6 h-6 flex items-center justify-center bg-neon-blue/20 border border-neon-blue/50 group-hover:bg-neon-blue group-hover:text-bg-dark transition-all" style={{ clipPath: polySmall }}>+</span>
+              Enter MAC Sequence
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+              <div className="flex gap-2">
+                <input
+                  value={mac} onChange={(e) => setMac(e.target.value)}
+                  placeholder="AA:BB:CC:DD:EE:FF"
+                  className="flex-1 bg-bg-dark border border-neon-blue/40 px-4 py-2 text-sm font-mono text-white outline-none focus:border-neon-blue placeholder:text-text-muted/30 uppercase"
+                  style={{ clipPath: polySmall }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePair()}
+                  autoFocus
+                />
+                <button
+                  onClick={handlePair} disabled={!mac.trim() || loading}
+                  className="px-6 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue text-xs font-mono font-bold uppercase tracking-widest transition-all hover:bg-neon-blue hover:text-bg-dark disabled:opacity-40"
+                  style={{ clipPath: polySmall }}
+                >
+                  {loading ? <span className="w-4 h-4 border-2 border-bg-dark/30 border-t-bg-dark rounded-full animate-spin inline-block" /> : "Sync"}
+                </button>
+              </div>
+              <button onClick={() => setOpen(false)} className="text-[10px] font-mono text-text-muted uppercase hover:text-white text-left mt-2">[ Cancel Operation ]</button>
+            </div>
+          )}
         </div>
-        <p className="text-sm font-mono text-text-muted mb-6 leading-relaxed">&gt; Power up e-ink terminal. Connect to local network. Input displayed MAC sequence below.</p>
-        {!open ? (
-          <div className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-widest text-neon-blue hover:text-white transition-colors pointer-events-none">
-            <span className="w-6 h-6 flex items-center justify-center bg-neon-blue/20 border border-neon-blue/50 group-hover:bg-neon-blue group-hover:text-bg-dark transition-all" style={{ clipPath: polySmall }}>+</span>
-            Enter MAC Sequence
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-            <div className="flex gap-2">
-              <input
-                value={mac} onChange={(e) => setMac(e.target.value)}
-                placeholder="AA:BB:CC:DD:EE:FF"
-                className="flex-1 bg-bg-dark border border-neon-blue/40 px-4 py-2 text-sm font-mono text-white outline-none focus:border-neon-blue placeholder:text-text-muted/30 uppercase"
-                style={{ clipPath: polySmall }}
-                onKeyDown={(e) => e.key === "Enter" && handlePair()}
-                autoFocus
-              />
-              <button
-                onClick={handlePair} disabled={!mac.trim() || loading}
-                className="px-6 py-2 bg-neon-blue/20 text-neon-blue border border-neon-blue text-xs font-mono font-bold uppercase tracking-widest transition-all hover:bg-neon-blue hover:text-bg-dark disabled:opacity-40"
-                style={{ clipPath: polySmall }}
-              >
-                {loading ? <span className="w-4 h-4 border-2 border-bg-dark/30 border-t-bg-dark rounded-full animate-spin inline-block" /> : "Sync"}
-              </button>
-            </div>
-            {error && <p className="text-[10px] font-mono text-red-400 uppercase">&gt; ERR: {error}</p>}
-            <button onClick={() => setOpen(false)} className="text-[10px] font-mono text-text-muted uppercase hover:text-white text-left mt-2">[ Cancel Operation ]</button>
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 }
 
 // ─── Creator Panel: invite link + QR + polling ────────────────────────────────
 function CreatorInvitePanel({ onJoined }: { onJoined: () => void }) {
   const { getToken } = useAuth();
+  const modal = useModal();
   const [inviteURL, setInviteURL] = useState("");
   const [loading, setLoading]     = useState(false);
   const [copied, setCopied]       = useState(false);
-  const [error, setError]         = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -131,78 +171,117 @@ function CreatorInvitePanel({ onJoined }: { onJoined: () => void }) {
 
   async function generate() {
     if (loading || inviteURL) return;
-    setLoading(true); setError("");
+    setLoading(true);
     try {
       const t = await getToken();
       if (!t) throw new Error("Auth failure");
       const resp = await api.createInvite(t);
       setInviteURL(resp.invite_url);
     } catch (err) {
-      setError((err as Error).message ?? "Failed to generate invite");
-    } finally { setLoading(false); }
+      // ── Invite generation error ────────────────────────────────────────────
+      const reason = (err as Error).message ?? "Failed to generate invite";
+      modal.open({
+        variant: "error",
+        seqCode: "INV_GEN_ERR",
+        title: "Invite failed",
+        body: reason,
+        actions: [
+          {
+            label: "Dismiss",
+            variant: "secondary",
+            onClick: () => modal.close(),
+          },
+          {
+            label: "Retry →",
+            variant: "primary",
+            onClick: () => {
+              modal.close();
+              generate();
+            },
+          },
+        ],
+      });
+    } finally {
+      setLoading(false); 
+    }
   }
 
   async function copy() {
     await navigator.clipboard.writeText(inviteURL);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+
+    // ── Copied success modal ───────────────────────────────────────────────
+    modal.open({
+      ...ModalPresets.inviteCopied(),
+      actions: [
+        {
+          label: "Got it",
+          variant: "primary",
+          onClick: () => modal.close(),
+        },
+      ],
+    });
   }
 
   return (
-    <div className="relative bg-surface-dark border border-neon-purple/30 p-7" style={{ clipPath: polyClipReverse }}>
-      <div className="absolute inset-0 bg-[linear-gradient(-45deg,transparent_25%,rgba(177,34,229,0.03)_50%,transparent_75%)] bg-[length:10px_10px] pointer-events-none" />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center bg-neon-purple/10 border border-neon-purple/50 text-neon-purple" style={{ clipPath: polySmall }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    <>
+      {modal.Modal}
+
+      <div className="relative bg-surface-dark border border-neon-purple/30 p-7" style={{ clipPath: polyClipReverse }}>
+        <div className="absolute inset-0 bg-[linear-gradient(-45deg,transparent_25%,rgba(177,34,229,0.03)_50%,transparent_75%)] bg-[length:10px_10px] pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center bg-neon-purple/10 border border-neon-purple/50 text-neon-purple" style={{ clipPath: polySmall }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-neon-purple/70">INIT_SEQ: 02</p>
+                <h3 className="font-display text-xl uppercase font-bold text-white tracking-wide">Partner Matrix</h3>
+              </div>
             </div>
-            <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-neon-purple/70">INIT_SEQ: 02</p>
-              <h3 className="font-display text-xl uppercase font-bold text-white tracking-wide">Partner Matrix</h3>
+            <div className={cn("flex items-center gap-2 mt-1 px-2 py-1 bg-surface border", inviteURL ? "border-neon-purple/40" : "border-white/10")} style={{ clipPath: polySmall }}>
+              <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", inviteURL ? "bg-neon-purple shadow-[0_0_8px_rgba(177,34,229,0.8)]" : "bg-neon-pink shadow-[0_0_8px_rgba(255,42,109,0.8)]")} />
+              <span className={cn("text-[10px] font-mono uppercase tracking-widest", inviteURL ? "text-neon-purple" : "text-text-muted")}>
+                {inviteURL ? "Waiting..." : "Offline"}
+              </span>
             </div>
           </div>
-          <div className={cn("flex items-center gap-2 mt-1 px-2 py-1 bg-surface border", inviteURL ? "border-neon-purple/40" : "border-white/10")} style={{ clipPath: polySmall }}>
-            <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", inviteURL ? "bg-neon-purple shadow-[0_0_8px_rgba(177,34,229,0.8)]" : "bg-neon-pink shadow-[0_0_8px_rgba(255,42,109,0.8)]")} />
-            <span className={cn("text-[10px] font-mono uppercase tracking-widest", inviteURL ? "text-neon-purple" : "text-text-muted")}>
-              {inviteURL ? "Waiting..." : "Offline"}
-            </span>
-          </div>
+
+          <p className="text-sm font-mono text-text-muted mb-6 leading-relaxed">
+            &gt; Your couple is <span className="text-yellow-400">pending</span>. Generate an invite link and share it with your partner — they click it, sign in, and you&apos;re connected.
+          </p>
+
+          {!inviteURL ? (
+            <button onClick={generate} disabled={loading}
+              className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-widest text-neon-purple hover:text-white transition-colors group"
+            >
+              <span className="w-6 h-6 flex items-center justify-center bg-neon-purple/20 border border-neon-purple/50 group-hover:bg-neon-purple group-hover:text-bg-dark transition-all" style={{ clipPath: polySmall }}>
+                {loading ? <span className="w-3 h-3 border border-bg-dark/40 border-t-bg-dark rounded-full animate-spin" /> : "+"}
+              </span>
+              Generate Invite Key
+            </button>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-center"><QRCode url={inviteURL} size={160} /></div>
+              <div className="flex items-center gap-2 bg-bg-dark border border-neon-purple/40 px-3 py-2" style={{ clipPath: polySmall }}>
+                <a href={inviteURL} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 text-[10px] font-mono text-neon-purple/80 hover:text-neon-purple truncate underline underline-offset-2 decoration-neon-purple/30"
+                  title={inviteURL}>{inviteURL}</a>
+                <button onClick={copy}
+                  className={cn("px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all shrink-0", copied ? "bg-neon-blue/20 text-neon-blue border border-neon-blue" : "bg-neon-purple/20 text-neon-purple border border-neon-purple hover:bg-neon-purple hover:text-bg-dark")}
+                  style={{ clipPath: polySmall }}>{copied ? "Copied ✓" : "Copy"}</button>
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 bg-neon-purple/5 border border-neon-purple/20" style={{ clipPath: polySmall }}>
+                <span className="w-3 h-3 border border-neon-purple/30 border-t-neon-purple rounded-full animate-spin shrink-0" />
+                <p className="text-[10px] font-mono text-neon-purple uppercase tracking-widest">&gt; Listening for partner connection...</p>
+              </div>
+            </div>
+          )}
         </div>
-
-        <p className="text-sm font-mono text-text-muted mb-6 leading-relaxed">
-          &gt; Your couple is <span className="text-yellow-400">pending</span>. Generate an invite link and share it with your partner — they click it, sign in, and you&apos;re connected.
-        </p>
-
-        {!inviteURL ? (
-          <button onClick={generate} disabled={loading}
-            className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-widest text-neon-purple hover:text-white transition-colors group"
-          >
-            <span className="w-6 h-6 flex items-center justify-center bg-neon-purple/20 border border-neon-purple/50 group-hover:bg-neon-purple group-hover:text-bg-dark transition-all" style={{ clipPath: polySmall }}>
-              {loading ? <span className="w-3 h-3 border border-bg-dark/40 border-t-bg-dark rounded-full animate-spin" /> : "+"}
-            </span>
-            Generate Invite Key
-          </button>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-center"><QRCode url={inviteURL} size={160} /></div>
-            <div className="flex items-center gap-2 bg-bg-dark border border-neon-purple/40 px-3 py-2" style={{ clipPath: polySmall }}>
-              <a href={inviteURL} target="_blank" rel="noopener noreferrer"
-                className="flex-1 text-[10px] font-mono text-neon-purple/80 hover:text-neon-purple truncate underline underline-offset-2 decoration-neon-purple/30"
-                title={inviteURL}>{inviteURL}</a>
-              <button onClick={copy}
-                className={cn("px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all shrink-0", copied ? "bg-neon-blue/20 text-neon-blue border border-neon-blue" : "bg-neon-purple/20 text-neon-purple border border-neon-purple hover:bg-neon-purple hover:text-bg-dark")}
-                style={{ clipPath: polySmall }}>{copied ? "Copied ✓" : "Copy"}</button>
-            </div>
-            {error && <p className="text-[10px] font-mono text-red-400 uppercase">&gt; ERR: {error}</p>}
-            <div className="flex items-center gap-3 px-3 py-2 bg-neon-purple/5 border border-neon-purple/20" style={{ clipPath: polySmall }}>
-              <span className="w-3 h-3 border border-neon-purple/30 border-t-neon-purple rounded-full animate-spin shrink-0" />
-              <p className="text-[10px] font-mono text-neon-purple uppercase tracking-widest">&gt; Listening for partner connection...</p>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -210,15 +289,14 @@ function CreatorInvitePanel({ onJoined }: { onJoined: () => void }) {
 function JoinerPanel({ onJoined, hasPendingCouple }: { onJoined: () => void; hasPendingCouple?: boolean }) {
   const { joinCouple } = useUser();
   const router = useRouter();
-  const [token, setToken]   = useState("");
+  const [token, setToken]     = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState("");
+  const [error, setError]     = useState("");
 
   async function handleJoin() {
     const raw = token.trim();
     if (!raw) return;
 
-    // Accept full URL or bare token
     let bareToken = raw;
     try {
       const url = new URL(raw);
@@ -300,10 +378,10 @@ function TodayPrompt() {
 // ─── Your Answer Card ─────────────────────────────────────────────────────────
 function YourAnswerCard() {
   const { sendMessage } = useUser();
-  const [text, setText]         = useState("");
+  const [text, setText]           = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
 
   async function submit() {
     if (!text.trim()) return;
@@ -399,21 +477,35 @@ export default function DashboardPage() {
   const [justPaired, setJustPaired] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
 
-  // Poll every 5s while pending so both users see activation instantly
+  // Show couple-activated modal when partner joins
+  const coupleModal = useModal();
+  useEffect(() => {
+    if (couple?.status === "active" && prevStatusRef.current && prevStatusRef.current !== "active") {
+      const partnerName = partnerUser?.name ?? "REMOTE_NODE";
+      setJustPaired(true);
+      setTimeout(() => setJustPaired(false), 5000);
+
+      // ── Partner joined modal ─────────────────────────────────────────────
+      coupleModal.open({
+        ...ModalPresets.coupleActivated(partnerName),
+        actions: [
+          {
+            label: "Enter matrix →",
+            variant: "primary",
+            onClick: () => coupleModal.close(),
+          },
+        ],
+      });
+    }
+    prevStatusRef.current = couple?.status ?? null;
+  }, [couple?.status, partnerUser?.name]);
+
+  // Poll every 5s while pending
   useEffect(() => {
     if (!couple || couple.status === "active") return;
     const id = setInterval(() => refetch(), 5000);
     return () => clearInterval(id);
   }, [couple?.status, refetch]);
-
-  // Flash banner on activation
-  useEffect(() => {
-    if (couple?.status === "active" && prevStatusRef.current && prevStatusRef.current !== "active") {
-      setJustPaired(true);
-      setTimeout(() => setJustPaired(false), 5000);
-    }
-    prevStatusRef.current = couple?.status ?? null;
-  }, [couple?.status]);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short", month: "2-digit", day: "2-digit", year: "numeric",
@@ -440,21 +532,21 @@ export default function DashboardPage() {
     );
   }
 
-  const firstName = user?.name?.split(" ")[0]?.toUpperCase() ?? "USER";
-  const partnerName = partnerUser?.name?.split(" ")[0]?.toUpperCase() ?? "UNKNOWN_NODE";
+  const firstName    = user?.name?.split(" ")[0]?.toUpperCase() ?? "USER";
+  const partnerName  = partnerUser?.name?.split(" ")[0]?.toUpperCase() ?? "UNKNOWN_NODE";
   const coupleActive  = couple?.status === "active";
   const couplePending = couple?.status === "pending";
   const noCouple      = !couple;
 
-  // Creator: has a pending couple (they created it, they can share the invite link)
   const isCreator = couplePending;
-  // Joiner: no couple yet OR has a pending couple (partner may have sent them a link)
   const isJoiner  = noCouple || couplePending;
-
   const needsPairing = !device;
 
   return (
     <AppLayout>
+      {/* Couple-activated modal */}
+      {coupleModal.Modal}
+
       <div className="min-h-screen bg-bg-dark text-white relative selection:bg-neon-blue/30 selection:text-white pt-12 pb-24">
         <div className="fixed inset-0 pointer-events-none z-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
 
@@ -471,7 +563,6 @@ export default function DashboardPage() {
               User_Link: <span className="text-neon-blue italic">[{firstName}]</span>
             </h1>
 
-            {/* Status line */}
             {coupleActive && (
               <p className="font-mono text-xs uppercase tracking-widest text-text-muted mt-4 border-l-2 border-neon-purple pl-3 py-1 bg-neon-purple/5">
                 Matrix synced with <span className="text-neon-purple">{partnerName}</span>.
@@ -492,7 +583,7 @@ export default function DashboardPage() {
 
           <div className="flex flex-col gap-8">
 
-            {/* Activation flash */}
+            {/* Activation flash banner */}
             {justPaired && (
               <div className="flex items-center gap-4 px-5 py-4 bg-neon-purple/10 border border-neon-purple shadow-[0_0_30px_rgba(177,34,229,0.2)]" style={{ clipPath: polySmall }}>
                 <span className="w-3 h-3 bg-neon-purple animate-pulse shrink-0" />
