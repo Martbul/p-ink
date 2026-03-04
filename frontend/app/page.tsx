@@ -332,14 +332,6 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/sign-in">
-              <button
-                className="px-4 py-2 font-mono text-xs uppercase tracking-widest text-white/50 border border-white/10 transition-all hover:text-white hover:border-white/30"
-                style={{ clipPath: polySm }}
-              >
-                Sign in
-              </button>
-            </Link>
             <Link href="/auth">
               <button
                 className="px-5 py-2 font-mono text-xs uppercase tracking-widest font-bold text-black"
