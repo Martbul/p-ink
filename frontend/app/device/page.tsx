@@ -665,32 +665,6 @@ export default function DevicePage() {
 
           </div>
 
-          {/* ─── Specs Grid ───────────────────────────────────────────────── */}
-          <section className="mb-20 animate-fade-up" style={{ animationDelay: "0.5s" }}>
-            <SectionHeader label="TECH_SPECS" title={<>Hardware <span className="text-neon-blue italic">Specs.</span></>} accent="neon-blue" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Display Type", value: "E-Ink EPD", sub: "Electronic Paper Display" },
-                { label: "Resolution", value: "800×480", sub: "Pixels, B&W 1-bit" },
-                { label: "Refresh Rate", value: "~2s", sub: "Full screen update" },
-                { label: "Power Draw", value: "~0mW", sub: "While displaying" },
-                { label: "Connectivity", value: "WiFi", sub: "802.11 b/g/n" },
-                { label: "Processor", value: "ESP32-S3", sub: "Dual-core 240MHz" },
-                { label: "Storage", value: "8MB", sub: "Flash + PSRAM" },
-                { label: "Update Protocol", value: "HTTPS", sub: "TLS 1.3 secured" },
-              ].map((spec, i) => (
-                <div
-                  key={spec.label}
-                  className="bg-surface-dark border border-white/5 p-5 hover:border-white/20 transition-colors"
-                  style={{ clipPath: i % 2 === 0 ? polyClip : polyClipReverse }}
-                >
-                  <p className="font-mono text-[9px] text-text-muted uppercase tracking-widest mb-2">{spec.label}</p>
-                  <p className="font-display text-xl font-black text-white uppercase tracking-wide mb-1">{spec.value}</p>
-                  <p className="font-mono text-[9px] text-text-muted">{spec.sub}</p>
-                </div>
-              ))}
-            </div>
-          </section>
 
           {/* ─── Save Banner ─────────────────────────────────────────────── */}
           <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-bg-dark/90 backdrop-blur-md py-4 px-6">

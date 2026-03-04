@@ -1,0 +1,94 @@
+// components/logo/LogoMark.tsx
+// The standalone icon mark — e-ink frame + heart
+// Usage: <LogoMark size={48} />
+
+interface LogoMarkProps {
+  size?: number;
+  className?: string;
+}
+
+export function LogoMark({ size = 120, className }: LogoMarkProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 120 120"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <defs>
+        <linearGradient id="lm-frameGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#05d9e8" />
+          <stop offset="100%" stopColor="#b122e5" />
+        </linearGradient>
+        <linearGradient id="lm-heartGrad" x1="30" y1="42" x2="90" y2="85" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#ff2a6d" />
+          <stop offset="100%" stopColor="#b122e5" />
+        </linearGradient>
+        <filter id="lm-glow">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Outer frame */}
+      <path
+        d="M18 8 L102 8 L112 18 L112 102 L102 112 L18 112 L8 102 L8 18 Z"
+        stroke="url(#lm-frameGrad)"
+        strokeWidth="1.5"
+        fill="rgba(5,217,232,0.03)"
+      />
+
+      {/* Inner frame */}
+      <path
+        d="M24 15 L96 15 L105 24 L105 96 L96 105 L24 105 L15 96 L15 24 Z"
+        stroke="url(#lm-frameGrad)"
+        strokeWidth="0.75"
+        strokeOpacity="0.4"
+        fill="none"
+      />
+
+      {/* Corner brackets */}
+      <g filter="url(#lm-glow)">
+        <line x1="8"   y1="30"  x2="8"   y2="18"  stroke="#05d9e8" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="8"   y1="18"  x2="20"  y2="18"  stroke="#05d9e8" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="100" y1="8"   x2="112" y2="8"   stroke="#b122e5" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="112" y1="8"   x2="112" y2="20"  stroke="#b122e5" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="112" y1="100" x2="112" y2="112" stroke="#05d9e8" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="112" y1="112" x2="100" y2="112" stroke="#05d9e8" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="20"  y1="112" x2="8"   y2="112" stroke="#b122e5" strokeWidth="2.5" strokeLinecap="square" />
+        <line x1="8"   y1="112" x2="8"   y2="100" stroke="#b122e5" strokeWidth="2.5" strokeLinecap="square" />
+      </g>
+
+      {/* Corner dots */}
+      <circle cx="18"  cy="18"  r="2.5" fill="#05d9e8" />
+      <circle cx="102" cy="18"  r="2.5" fill="#b122e5" />
+      <circle cx="102" cy="102" r="2.5" fill="#05d9e8" />
+      <circle cx="18"  cy="102" r="2.5" fill="#b122e5" />
+
+      {/* Heart fill */}
+      <path
+        d="M60 82 C60 82 32 65 32 48 C32 39 39 33 47 33 C52 33 56 36 60 40 C64 36 68 33 73 33 C81 33 88 39 88 48 C88 65 60 82 60 82Z"
+        fill="rgba(255,42,109,0.12)"
+      />
+
+      {/* Heart stroke */}
+      <path
+        d="M60 82 C60 82 32 65 32 48 C32 39 39 33 47 33 C52 33 56 36 60 40 C64 36 68 33 73 33 C81 33 88 39 88 48 C88 65 60 82 60 82Z"
+        stroke="url(#lm-heartGrad)"
+        strokeWidth="2"
+        fill="none"
+        filter="url(#lm-glow)"
+      />
+
+      {/* Data dots */}
+      <rect x="20" y="94" width="3" height="3" rx="0.5" fill="#05d9e8" opacity="0.5" />
+      <rect x="26" y="94" width="3" height="3" rx="0.5" fill="#b122e5" opacity="0.5" />
+      <rect x="32" y="94" width="3" height="3" rx="0.5" fill="#05d9e8" opacity="0.5" />
+    </svg>
+  );
+}

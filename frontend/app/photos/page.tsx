@@ -1,16 +1,14 @@
 "use client";
 import { useRef, useCallback, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Spinner } from "@/components/ui"; // Keeping Spinner if it's functional, but styling around it
+import { Spinner } from "@/components/ui"; 
 import { useUser } from "@/providers/UserProvider";
 import { cn } from "@/lib/utils";
 import type { Content } from "@/types/api";
 
-// --- Cyberpunk Shapes ---
 const polyClip = "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
 const polySmall = "polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ content }: { content: Content }) {
   if (content.status === "displayed")

@@ -1,543 +1,769 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { FrameMiniMockup } from "@/components/frame/FrameMiniMockup";
-import { useAuth } from "@clerk/nextjs";
 
-// --- CUSTOM CYBERPUNK SHAPES ---
-// We use inline clip-paths to kill the standard rectangles
-const polyClip =
+const poly =
+  "polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)";
+const polyLg =
   "polygon(20px 0%, 100% 0%, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0% 100%, 0% 20px)";
-const polyClipReverse =
-  "polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))";
+const polySm =
+  "polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)";
 
-const PROMPTS = [
-  "What made you smile today?",
-  "Describe your perfect Sunday morning.",
-  "What song reminds you of us?",
-  "Where do you want to travel together next?",
-];
-
-const STEPS = [
-  {
-    step: "01",
-    label: "INITIATE",
-    title: "Link the System",
-    desc: "Boot up the e-ink terminal. It syncs to the localized network and outputs a pairing sequence. Enter the code on your mobile HUD.",
-  },
-  {
-    step: "02",
-    label: "TRANSMIT",
-    title: "Dual Uplink",
-    desc: "A daily query generates at 08:00. Both users transmit data asynchronously. The physical display unifies the data only when both signals lock.",
-  },
-  {
-    step: "03",
-    label: "RESET",
-    title: "Midnight Fade",
-    desc: "Memory blocks hold for the diurnal cycle. At 00:00 local time, the display clears the buffer, establishing space for tomorrow.",
-  },
-];
-
-// 1. HUD Navigation (Replaces standard top bar)
-const CyberNav = () => {
+function LogoMark({ size = 36 }: { size?: number }) {
   return (
-    <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 pointer-events-none">
-      <div
-        className="pointer-events-auto flex items-center justify-between px-6 py-4 bg-surface/80 backdrop-blur-md border border-neon-blue/30 shadow-[0_0_20px_rgba(5,217,232,0.15)] relative overflow-hidden"
-        style={{ clipPath: polyClip }}
-      >
-        {/* Animated scanline in Nav */}
-        <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] opacity-20 pointer-events-none" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 120 120"
+      fill="none"
+      style={{
+        filter:
+          "drop-shadow(0 0 8px rgba(5,217,232,0.5)) drop-shadow(0 0 20px rgba(177,34,229,0.3))",
+      }}
+    >
+      <defs>
+        <linearGradient
+          id="lm-f"
+          x1="0"
+          y1="0"
+          x2="120"
+          y2="120"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#05d9e8" />
+          <stop offset="100%" stopColor="#b122e5" />
+        </linearGradient>
+        <linearGradient
+          id="lm-h"
+          x1="30"
+          y1="42"
+          x2="90"
+          y2="85"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#ff2a6d" />
+          <stop offset="100%" stopColor="#b122e5" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M18 8 L102 8 L112 18 L112 102 L102 112 L18 112 L8 102 L8 18 Z"
+        stroke="url(#lm-f)"
+        strokeWidth="2"
+        fill="rgba(5,217,232,0.04)"
+      />
+      <line x1="8" y1="28" x2="8" y2="18" stroke="#05d9e8" strokeWidth="3" />
+      <line x1="8" y1="18" x2="18" y2="18" stroke="#05d9e8" strokeWidth="3" />
+      <line x1="102" y1="8" x2="112" y2="8" stroke="#b122e5" strokeWidth="3" />
+      <line x1="112" y1="8" x2="112" y2="18" stroke="#b122e5" strokeWidth="3" />
+      <line
+        x1="112"
+        y1="102"
+        x2="112"
+        y2="112"
+        stroke="#05d9e8"
+        strokeWidth="3"
+      />
+      <line
+        x1="112"
+        y1="112"
+        x2="102"
+        y2="112"
+        stroke="#05d9e8"
+        strokeWidth="3"
+      />
+      <line x1="18" y1="112" x2="8" y2="112" stroke="#b122e5" strokeWidth="3" />
+      <line x1="8" y1="112" x2="8" y2="102" stroke="#b122e5" strokeWidth="3" />
+      <path
+        d="M60 82 C60 82 32 65 32 48 C32 39 39 33 47 33 C52 33 56 36 60 40 C64 36 68 33 73 33 C81 33 88 39 88 48 C88 65 60 82 60 82Z"
+        stroke="url(#lm-h)"
+        strokeWidth="2.5"
+        fill="rgba(255,42,109,0.12)"
+      />
+    </svg>
+  );
+}
 
-        <div className="flex items-center gap-4">
-          <Link
-            href="/"
-            className="font-display text-2xl font-black tracking-widest text-white uppercase flex items-center gap-2 group"
-          >
-            <span className="text-neon-pink group-hover:text-glow-pink transition-all">
-              P-INK
-            </span>
-            <span className="text-[10px] font-mono text-neon-blue border border-neon-blue/40 px-1 py-0.5 rounded-sm">
-              v1.0
-            </span>
-          </Link>
-        </div>
-
-        <div className="hidden md:flex items-center gap-8 font-mono text-xs tracking-[0.2em] uppercase">
-          <a
-            href="#architecture"
-            className="text-text-muted hover:text-neon-purple transition-colors"
-          >
-            Architecture
-          </a>
-          <a
-            href="#specs"
-            className="text-text-muted hover:text-neon-pink transition-colors"
-          >
-            Specs
-          </a>
-
-          <Link
-            href="/auth"
-            className="relative px-6 py-2 bg-neon-pink/10 border border-neon-pink text-neon-pink hover:bg-neon-pink hover:text-white transition-all duration-300"
+function FeatureCard({
+  icon,
+  label,
+  title,
+  body,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  body: string;
+  color: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative p-7 border transition-all duration-300 group cursor-default"
+      style={{
+        clipPath: poly,
+        background: "rgba(255,255,255,0.02)",
+        borderColor: hovered ? `${color}55` : `${color}20`,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="absolute top-0 left-0 pointer-events-none">
+        <div
+          className="absolute top-0 left-0 w-4 h-px"
+          style={{ background: color }}
+        />
+        <div
+          className="absolute top-0 left-0 w-px h-4"
+          style={{ background: color }}
+        />
+      </div>
+      <div className="absolute bottom-0 right-0 pointer-events-none">
+        <div
+          className="absolute bottom-0 right-0 w-4 h-px"
+          style={{ background: color }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-px h-4"
+          style={{ background: color }}
+        />
+      </div>
+      {hovered && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 30% 30%, ${color}08 0%, transparent 60%)`,
+          }}
+        />
+      )}
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div
+            className="w-10 h-10 flex items-center justify-center border"
             style={{
-              clipPath:
-                "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
+              clipPath: polySm,
+              background: `${color}12`,
+              borderColor: `${color}50`,
+              color,
             }}
           >
-            Connect [ + ]
-          </Link>
+            {icon}
+          </div>
+          <p
+            className="font-mono text-[9px] tracking-[0.25em] uppercase"
+            style={{ color: `${color}80` }}
+          >
+            {label}
+          </p>
         </div>
+        <h3
+          className="font-display text-lg uppercase font-bold text-white tracking-wide mb-3"
+          style={{ fontFamily: "'Syne', sans-serif" }}
+        >
+          {title}
+        </h3>
+        <p className="text-sm font-mono leading-relaxed text-white/40">
+          {body}
+        </p>
       </div>
-    </nav>
+    </div>
   );
-};
+}
 
-// 2. Immersive Dashboard Hero
-const HeroDashboard = () => {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [promptIdx, setPromptIdx] = useState(0);
+function StatPill({ value, label }: { value: string; label: string }) {
+  return (
+    <div
+      className="flex flex-col items-center gap-1 px-6 py-4 border border-white/10"
+      style={{ clipPath: polySm, background: "rgba(255,255,255,0.03)" }}
+    >
+      <span
+        className="font-display text-2xl font-bold text-white tracking-tight"
+        style={{
+          fontFamily: "'Syne', sans-serif",
+          textShadow: "0 0 20px rgba(5,217,232,0.4)",
+        }}
+      >
+        {value}
+      </span>
+      <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-white/30">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export default function LandingPage() {
+  const [mounted, setMounted] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setPromptIdx((i) => (i + 1) % PROMPTS.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let W = (canvas.width = window.innerWidth);
+    let H = (canvas.height = window.innerHeight);
+    const pts = Array.from({ length: 55 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.2 + 0.4,
+      c: Math.random() > 0.5 ? "#05d9e8" : "#b122e5",
+      a: Math.random() * 0.35 + 0.08,
+    }));
+    let raf: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of pts) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle =
+          p.c +
+          Math.floor(p.a * 255)
+            .toString(16)
+            .padStart(2, "0");
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    const onResize = () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-dark pt-20">
-      {/* Immersive Background: Synthwave Sun & 3D Grid Floor */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] bg-gradient-to-t from-neon-pink to-transparent rounded-full opacity-30 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-[40vh] perspective-1000">
-        <div
-          className="w-[200%] h-[200%] ml-[-50%] mt-[-20%] grid-bg transform rotate-x-[75deg] opacity-40 border-t border-neon-blue shadow-[0_-10px_30px_rgba(5,217,232,0.2)]"
-          style={{ transformOrigin: "top center" }}
-        />
-      </div>
+    <div
+      className="min-h-screen text-white overflow-x-hidden"
+      style={{ background: "#080810", fontFamily: "'Space Mono', monospace" }}
+    >
+      {/* Particles */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: 0, opacity: 0.6 }}
+      />
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-        {/* Left: Text & Terminal Input */}
-        <div className="lg:col-span-7 flex flex-col gap-6 relative">
-          <div className="absolute -left-10 top-0 h-full w-px bg-gradient-to-b from-transparent via-neon-pink to-transparent opacity-50 hidden md:block" />
+      {/* Scanlines */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 1,
+          background:
+            "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.14) 3px, rgba(0,0,0,0.14) 4px)",
+        }}
+      />
 
-          <div className="flex items-center gap-3 text-neon-blue font-mono text-xs uppercase tracking-[0.3em]">
-            <span className="w-2 h-2 bg-neon-blue animate-pulse" />
-            System Online // Long-Distance Link
-          </div>
+      {/* BG glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 0,
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(177,34,229,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 80%, rgba(5,217,232,0.05) 0%, transparent 50%)",
+        }}
+      />
 
-          <h1 className="text-display-xl text-white uppercase tracking-tighter leading-[0.9]">
-            Shared <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink to-neon-purple text-glow-pink italic pr-4">
-              Consciousness
-            </span>
-          </h1>
-
-          <p className="text-lg text-text-muted font-light max-w-lg mt-4 border-l-2 border-neon-purple/50 pl-4 bg-gradient-to-r from-neon-purple/10 to-transparent py-2">
-            A physical e-ink terminal on your desk. A daily prompt. Two inputs
-            that dissolve at cycle end. Proximity simulated through synchronized
-            data.
-          </p>
-
-          {/* Terminal Style Input */}
-          <div className="mt-8">
-            {submitted ? (
-              <div
-                className="bg-surface/80 border border-neon-blue p-4 font-mono text-neon-blue w-fit"
-                style={{ clipPath: polyClipReverse }}
-              >
-                &gt; USER LINK ESTABLISHED. AWAITING HARDWARE...
-              </div>
-            ) : (
-              <form
-                className="flex flex-col sm:flex-row gap-0 max-w-xl"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (email) setSubmitted(true);
+      <div className="relative" style={{ zIndex: 2 }}>
+        {/* NAV */}
+        <nav
+          className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between"
+          style={{
+            background: "rgba(8,8,16,0.85)",
+            backdropFilter: "blur(16px)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <LogoMark size={30} />
+            <div className="flex items-baseline">
+              <span
+                style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontWeight: 800,
+                  fontSize: 20,
+                  color: "#fff",
+                  letterSpacing: -1,
                 }}
               >
-                <div
-                  className="flex-1 flex items-center bg-surface/90 border-y border-l border-white/20 px-4 py-4 font-mono"
-                  style={{
-                    clipPath:
-                      "polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)",
-                  }}
-                >
-                  <span className="text-neon-pink mr-3">&gt;</span>
-                  <input
-                    type="email"
-                    className="bg-transparent outline-none text-white w-full placeholder:text-text-muted/40"
-                    placeholder="ENTER_EMAIL_ID_"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <span className="w-2 h-5 bg-neon-blue animate-pulse ml-2" />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-neon-pink hover:bg-white hover:text-neon-pink text-white font-bold uppercase tracking-widest px-8 py-4 transition-all"
-                  style={{
-                    clipPath:
-                      "polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)",
-                  }}
-                >
-                  Join Net
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Floating Dashboard Element (Collage feel) */}
-        <div className="lg:col-span-5 relative h-[500px] flex items-center justify-center mt-10 lg:mt-0">
-          {/* Background Decorative Data Plates */}
-          <div
-            className="absolute top-10 right-0 w-64 h-32 border border-white/5 bg-surface/40 backdrop-blur-md font-mono text-[10px] text-text-muted p-4 -rotate-6"
-            style={{ clipPath: polyClip }}
-          >
-            SYS_LOG: <br />
-            [+] CALIBRATING SYNC...
-            <br />
-            [+] LATENCY: 14ms
-            <br />
-            [+] WAITING FOR USER 2...
-          </div>
-
-          <div
-            className="absolute bottom-10 left-0 w-72 p-4 border-l-2 border-neon-blue bg-surface-light/80 backdrop-blur-xl z-20 shadow-2xl"
-            style={{ clipPath: polyClipReverse }}
-          >
-            <p className="font-mono text-xs text-neon-blue mb-1 uppercase tracking-widest">
-              Incoming Transmission
-            </p>
-            <p className="font-display italic text-lg text-white">
-              &quot;{PROMPTS[promptIdx]}&quot;
-            </p>
-          </div>
-
-          {/* Main Frame Mockup */}
-          <div
-            className="relative z-10 animate-float p-2 border border-neon-pink/30 bg-black/50 backdrop-blur-lg shadow-[0_0_50px_rgba(255,42,109,0.3)]"
-            style={{ clipPath: polyClip }}
-          >
-            <FrameMiniMockup size="lg" />
-
-            {/* Corner bracket accents */}
-            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-neon-pink" />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-neon-pink" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// 3. Flow Architecture (Replaces horizontal 3-column cards)
-// Uses an alternating vertical timeline (Circuit board feel)
-const ArchitectureFlow = () => {
-  return (
-    <section
-      id="architecture"
-      className="relative py-32 bg-surface-dark overflow-hidden"
-    >
-      {/* Center Circuit Line */}
-      <div className="absolute left-6 md:left-1/2 md:-translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-bg-dark via-neon-purple to-bg-dark" />
-
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <div
-          className="text-center mb-24 relative inline-block left-1/2 -translate-x-1/2 bg-surface-dark px-8 py-4 border border-neon-purple/30"
-          style={{ clipPath: polyClip }}
-        >
-          <p className="text-neon-purple font-mono text-xs tracking-[0.4em] uppercase mb-2">
-            Operation Protocol
-          </p>
-          <h2 className="text-4xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
-            System{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-blue">
-              Architecture
-            </span>
-          </h2>
-        </div>
-
-        <div className="flex flex-col gap-20">
-          {STEPS.map((s, i) => {
-            const isEven = i % 2 === 0;
-            return (
-              <div
-                key={s.step}
-                className={cn(
-                  "relative flex flex-col md:flex-row items-center gap-8 md:gap-16",
-                  isEven ? "md:flex-row" : "md:flex-row-reverse",
-                )}
+                p
+              </span>
+              <span
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: 18,
+                  color: "rgba(255,255,255,0.25)",
+                }}
               >
-                {/* Connecting Node */}
-                <div className="absolute left-6 md:left-1/2 -translate-x-1/2 w-4 h-4 bg-bg-dark border-2 border-neon-purple rotate-45 z-20 shadow-[0_0_15px_rgba(177,34,229,0.8)]" />
+                -
+              </span>
+              <span
+                style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontWeight: 800,
+                  fontSize: 20,
+                  letterSpacing: -1,
+                  background: "linear-gradient(135deg, #05d9e8, #b122e5)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                ink
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/sign-in">
+              <button
+                className="px-4 py-2 font-mono text-xs uppercase tracking-widest text-white/50 border border-white/10 transition-all hover:text-white hover:border-white/30"
+                style={{ clipPath: polySm }}
+              >
+                Sign in
+              </button>
+            </Link>
+            <Link href="/auth">
+              <button
+                className="px-5 py-2 font-mono text-xs uppercase tracking-widest font-bold text-black"
+                style={{
+                  clipPath: polySm,
+                  background: "linear-gradient(135deg, #05d9e8, #b122e5)",
+                }}
+              >
+                Get started
+              </button>
+            </Link>
+          </div>
+        </nav>
 
-                {/* Content Panel */}
-                <div
-                  className={cn(
-                    "w-full md:w-1/2 pl-16 md:pl-0",
-                    isEven ? "md:pr-16 md:text-right" : "md:pl-16 text-left",
-                  )}
-                >
+        {/* HERO */}
+        <section className="pt-40 pb-28 px-6 flex flex-col items-center text-center">
+          <div
+            className="mb-8 px-4 py-2 border border-cyan-400/20 flex items-center gap-3"
+            style={{ clipPath: polySm, background: "rgba(5,217,232,0.05)" }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-400/70">
+              Signal active · v1.0
+            </span>
+          </div>
+
+          <div
+            className={`transition-all duration-1000 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <h1
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                fontSize: "clamp(56px, 10vw, 130px)",
+                lineHeight: 0.95,
+                textShadow: "0 0 60px rgba(177,34,229,0.25)",
+              }}
+            >
+              <span style={{ color: "#fff" }}>Stay</span>
+              <br />
+              <span
+                style={{
+                  background:
+                    "linear-gradient(135deg, #05d9e8 0%, #b122e5 55%, #ff2a6d 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  filter: "drop-shadow(0 0 30px rgba(5,217,232,0.3))",
+                }}
+              >
+                close.
+              </span>
+            </h1>
+          </div>
+
+          <div
+            className={`transition-all duration-1000 delay-200 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <p className="mt-6 mb-10 max-w-lg text-sm font-mono leading-relaxed text-white/40">
+              {"> "}A shared e-ink frame that keeps long-distance couples
+              connected through daily prompts, photos, and a tiny digital
+              creature that thrives on attention.
+            </p>
+          </div>
+
+          <div
+            className={`flex flex-col sm:flex-row gap-4 items-center transition-all duration-1000 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <Link href="/auth">
+              <button
+                className="relative px-10 py-4 font-mono text-sm font-bold uppercase tracking-widest text-black group transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  clipPath: poly,
+                  background:
+                    "linear-gradient(135deg, #05d9e8 0%, #b122e5 100%)",
+                }}
+              >
+                <span className="relative z-10">Start transmitting</span>
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            </Link>
+            <button
+              className="px-8 py-4 font-mono text-sm uppercase tracking-widest text-white/50 border border-white/15 transition-all hover:text-white hover:border-white/30"
+              style={{ clipPath: poly }}
+            >
+              See how it works ↓
+            </button>
+          </div>
+
+          <div
+            className={`mt-16 flex gap-4 flex-wrap justify-center transition-all duration-1000 delay-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <StatPill value="2.4k" label="Couples connected" />
+            <StatPill value="98%" label="Daily sync rate" />
+            <StatPill value="∞" label="Distance dissolved" />
+          </div>
+        </section>
+
+        {/* DEVICE PREVIEW */}
+        <section className="py-16 px-6 flex justify-center">
+          <div className="relative max-w-sm w-full">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, rgba(177,34,229,0.18) 0%, rgba(5,217,232,0.08) 45%, transparent 70%)",
+                transform: "scale(1.5)",
+              }}
+            />
+            <div
+              className="relative border-2 border-white/10 p-3"
+              style={{
+                clipPath: polyLg,
+                background: "rgba(255,255,255,0.02)",
+                boxShadow:
+                  "0 0 40px rgba(5,217,232,0.08), 0 0 80px rgba(177,34,229,0.08), inset 0 0 30px rgba(0,0,0,0.5)",
+              }}
+            >
+              {/* Corner marks */}
+              {(
+                [
+                  "top-0 left-0",
+                  "top-0 right-0",
+                  "bottom-0 right-0",
+                  "bottom-0 left-0",
+                ] as const
+              ).map((pos, i) => {
+                const c = i % 2 === 0 ? "#05d9e8" : "#b122e5";
+                const isR = pos.includes("right"),
+                  isB = pos.includes("bottom");
+                return (
                   <div
-                    className="relative p-8 bg-surface border border-white/5 hover:border-neon-purple/50 transition-colors group"
-                    style={{ clipPath: isEven ? polyClipReverse : polyClip }}
+                    key={i}
+                    className={`absolute ${pos} w-5 h-5 pointer-events-none`}
                   >
                     <div
-                      className={cn(
-                        "absolute -top-6 text-7xl font-black text-white/5 group-hover:text-neon-purple/20 transition-colors font-mono",
-                        isEven ? "right-4" : "left-4",
-                      )}
-                    >
-                      {s.step}
-                    </div>
-                    <span className="inline-block px-2 py-1 bg-neon-purple/20 text-neon-purple font-mono text-[10px] tracking-widest uppercase mb-4">
-                      {s.label}
-                    </span>
-                    <h3 className="text-2xl font-display text-white mb-3 uppercase tracking-wide group-hover:text-neon-blue transition-colors">
-                      {s.title}
-                    </h3>
-                    <p className="text-text-muted leading-relaxed text-sm font-mono">
-                      {s.desc}
-                    </p>
+                      style={{
+                        position: "absolute",
+                        [isB ? "bottom" : "top"]: 0,
+                        [isR ? "right" : "left"]: 0,
+                        width: 14,
+                        height: 1,
+                        background: c,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        [isB ? "bottom" : "top"]: 0,
+                        [isR ? "right" : "left"]: 0,
+                        width: 1,
+                        height: 14,
+                        background: c,
+                      }}
+                    />
                   </div>
+                );
+              })}
+              <div
+                className="aspect-[4/3] flex flex-col items-center justify-center gap-4 p-8 relative overflow-hidden"
+                style={{ background: "rgba(8,8,16,0.75)" }}
+              >
+                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-white/20">
+                  Today&apos;s prompt
                 </div>
-
-                {/* Empty space for the other half of the grid */}
-                <div className="hidden md:block w-1/2" />
+                <p
+                  className="font-display text-center text-white/80 text-xl font-bold leading-tight"
+                  style={{ fontFamily: "'Syne', sans-serif" }}
+                >
+                  &ldquo;What song reminds you of us right now?&rdquo;
+                </p>
+                <div className="flex gap-2 mt-2">
+                  {["bg-cyan-400", "bg-purple-400", "bg-pink-400"].map(
+                    (c, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full ${c} opacity-60 animate-pulse`}
+                        style={{ animationDelay: `${i * 0.4}s` }}
+                      />
+                    ),
+                  )}
+                </div>
+                {/* Animated scan line */}
+                <div
+                  className="absolute left-0 right-0 h-px opacity-40"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, transparent, #05d9e8, transparent)",
+                    animation: "scan 4s linear infinite",
+                  }}
+                />
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// 4. Hardware Specs (Replaces grid rectangles with an angled collage)
-const SpecsCollage = () => {
-  return (
-    <section
-      id="specs"
-      className="py-32 relative bg-bg-dark border-y border-white/10 overflow-hidden"
-    >
-      {/* Background Japanese typography / aesthetic marks */}
-      <div className="absolute top-10 right-10 text-[150px] font-black text-white/[0.02] writing-vertical-rl pointer-events-none select-none">
-        接続システム
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="mb-16 border-l-4 border-neon-pink pl-6 py-2">
-          <p className="text-neon-pink font-mono text-xs tracking-[0.3em] uppercase mb-2">
-            Hardware & Software
-          </p>
-          <h2 className="text-4xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
-            Technical <span className="text-glow-pink italic">Specs</span>
-          </h2>
-        </div>
-
-        {/* Collage Layout - Overlapping angled panels */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative">
-          {/* Panel 1 */}
-          <div
-            className="md:col-span-7 bg-surface p-8 relative overflow-hidden group border-t border-white/10"
-            style={{ clipPath: polyClip }}
-          >
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-neon-blue/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="text-neon-blue mb-4">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
             </div>
-            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
-              100+ Data Prompts
-            </h3>
-            <p className="text-text-muted font-mono text-sm">
-              Deep, nostalgic, and varied inputs. The algorithmic system ensures
-              zero query repetition. Constantly rotating psychological
-              engagement.
-            </p>
-          </div>
-
-          {/* Panel 2 (Offset/overlapping slightly visually) */}
-          <div
-            className="md:col-span-5 md:mt-12 bg-surface-light p-8 border-r-2 border-neon-purple shadow-[0_0_30px_rgba(177,34,229,0.1)]"
-            style={{ clipPath: polyClipReverse }}
-          >
-            <div className="text-neon-purple mb-4">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
+            <div className="flex justify-between mt-3 px-1">
+              <span className="font-mono text-[9px] text-white/20 uppercase tracking-[0.2em]">
+                p-ink frame
+              </span>
+              <span className="font-mono text-[9px] text-cyan-400/40 uppercase tracking-[0.2em]">
+                ● Live
+              </span>
             </div>
-            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
-              Visual Queue
-            </h3>
-            <p className="text-text-muted font-mono text-sm">
-              Upload encrypted imagery from your mobile HUD. The physical
-              terminal cycles through synchronized memory banks daily.
-            </p>
           </div>
+        </section>
 
-          {/* Panel 3 */}
-          <div
-            className="md:col-span-4 bg-surface-dark p-8 border border-white/5 mt-6"
-            style={{ clipPath: polyClip }}
-          >
-            <div className="text-neon-pink mb-4">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
-              00:00 Auto-Reset
-            </h3>
-            <p className="text-text-muted font-mono text-sm">
-              Signals fade at 00:00 local, clearing the cache for the next
-              cycle.
-            </p>
+        {/* FEATURES */}
+        <section className="py-24 px-6 max-w-5xl mx-auto">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30">
+              Core systems
+            </span>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
-
-          {/* Panel 4 - Wide block */}
-          <div
-            className="md:col-span-8 bg-surface p-8 mt-6 border-b-2 border-neon-blue relative"
-            style={{
-              clipPath:
-                "polygon(0 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))",
-            }}
-          >
-            {/* Grid overlay */}
-            <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none mix-blend-screen" />
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="text-neon-blue p-4 bg-bg-dark rounded-full border border-neon-blue/30 shadow-[0_0_15px_rgba(5,217,232,0.4)]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <FeatureCard
+              color="#05d9e8"
+              label="SYS_01"
+              icon={
                 <svg
-                  width="32"
-                  height="32"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="2"
                 >
-                  <rect x="2" y="3" width="20" height="14" rx="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
+              }
+              title="Daily Prompts"
+              body="A new question every morning. Answer together. Build a shared archive of moments across any distance."
+            />
+            <FeatureCard
+              color="#b122e5"
+              label="SYS_02"
+              icon={
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              }
+              title="Shared Tamagotchi"
+              body="A tiny creature that thrives when both of you engage. Neglect it together and watch it sulk on your frame."
+            />
+            <FeatureCard
+              color="#ff2a6d"
+              label="SYS_03"
+              icon={
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              }
+              title="Photo Frame"
+              body="Push photos straight to your partner's e-ink display. Wake up to a surprise image. Stay present."
+            />
+          </div>
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section className="py-24 px-6 max-w-3xl mx-auto">
+          <div className="flex items-center gap-4 mb-16">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30">
+              Initialization sequence
+            </span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+          {[
+            {
+              num: "01",
+              title: "Create your couple",
+              body: "Sign up, create a couple account, and generate an invite link for your partner.",
+              color: "#05d9e8",
+            },
+            {
+              num: "02",
+              title: "Connect your frame",
+              body: "Pair your e-ink device via the dashboard. It syncs automatically over Wi-Fi.",
+              color: "#b122e5",
+            },
+            {
+              num: "03",
+              title: "Start transmitting",
+              body: "Receive daily prompts, send photos, and watch your shared creature come to life.",
+              color: "#ff2a6d",
+            },
+          ].map((s, i) => (
+            <div key={i} className="flex gap-6 group">
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-10 h-10 flex items-center justify-center border font-mono text-sm font-bold shrink-0 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    clipPath: polySm,
+                    borderColor: `${s.color}50`,
+                    color: s.color,
+                    background: `${s.color}10`,
+                  }}
+                >
+                  {s.num}
+                </div>
+                {i < 2 && (
+                  <div
+                    className="w-px my-2"
+                    style={{
+                      height: 48,
+                      background: `linear-gradient(to bottom, ${s.color}30, transparent)`,
+                    }}
+                  />
+                )}
               </div>
-              <div>
-                <h3 className="text-xl text-white font-display uppercase tracking-widest mb-2">
-                  E-ink Display Protocol
+              <div className="pb-10 pt-1">
+                <h3
+                  className="font-display text-lg uppercase font-bold text-white tracking-wide mb-2"
+                  style={{ fontFamily: "'Syne', sans-serif" }}
+                >
+                  {s.title}
                 </h3>
-                <p className="text-text-muted font-mono text-sm">
-                  Zero blue light radiation. Persistent low-power display. High
-                  contrast organic readability matching paper standards.
+                <p className="text-sm font-mono text-white/40 leading-relaxed">
+                  {s.body}
                 </p>
               </div>
             </div>
+          ))}
+        </section>
+
+        {/* BOTTOM CTA */}
+        <section className="py-32 px-6 flex flex-col items-center text-center">
+          <div
+            className="relative max-w-2xl w-full p-12 border border-white/10"
+            style={{
+              clipPath: polyLg,
+              background:
+                "linear-gradient(135deg, rgba(5,217,232,0.03) 0%, rgba(177,34,229,0.05) 100%)",
+            }}
+          >
+            <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none">
+              <div className="absolute top-0 left-0 w-5 h-px bg-cyan-400/60" />
+              <div className="absolute top-0 left-0 w-px h-5 bg-cyan-400/60" />
+            </div>
+            <div className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none">
+              <div className="absolute bottom-0 right-0 w-5 h-px bg-purple-500/60" />
+              <div className="absolute bottom-0 right-0 w-px h-5 bg-purple-500/60" />
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30 mb-4">
+              Final transmission
+            </p>
+            <h2
+              className="text-4xl font-bold uppercase text-white mb-4 tracking-tight"
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                textShadow: "0 0 40px rgba(177,34,229,0.3)",
+              }}
+            >
+              Distance is just
+              <br />
+              <span
+                style={{
+                  background: "linear-gradient(135deg, #05d9e8, #ff2a6d)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                a setting.
+              </span>
+            </h2>
+            <p className="font-mono text-sm text-white/40 mb-8 leading-relaxed">
+              Join couples who choose presence over distance.
+            </p>
+            <Link href="/auth">
+              <button
+                className="px-10 py-4 font-mono text-sm font-bold uppercase tracking-widest text-black transition-transform hover:scale-[1.02]"
+                style={{
+                  clipPath: poly,
+                  background:
+                    "linear-gradient(135deg, #05d9e8, #b122e5 60%, #ff2a6d)",
+                }}
+              >
+                Connect now →
+              </button>
+            </Link>
           </div>
-        </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer className="py-8 px-6 border-t border-white/[0.06]">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <LogoMark size={20} />
+              <span className="font-mono text-xs text-white/20 uppercase tracking-widest">
+                p-ink
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-white/15 uppercase tracking-[0.2em]">
+              distance / dissolved © {new Date().getFullYear()}
+            </span>
+          </div>
+        </footer>
       </div>
-    </section>
-  );
-};
 
-// 5. Final CTA Sequence
-const CTASequence = () => {
-  return (
-    <section className="py-32 px-6 relative flex flex-col items-center justify-center text-center overflow-hidden bg-bg-dark">
-      {/* Target Crosshair Decoration */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-white/5 rounded-full pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-neon-pink/10 rounded-full pointer-events-none border-dashed animate-[spin_60s_linear_infinite]" />
-
-      <div
-        className="relative z-10 max-w-2xl bg-surface/40 backdrop-blur-xl p-12 border border-neon-blue/20"
-        style={{ clipPath: polyClip }}
-      >
-        <p className="text-neon-blue font-mono text-xs tracking-[0.4em] uppercase mb-4 animate-pulse">
-          &gt; SYSTEM OVERRIDE AVAILABLE
-        </p>
-        <h2 className="text-5xl font-display font-black text-white uppercase tracking-tighter mb-6">
-          Initialize <br />{" "}
-          <span className="text-glow-blue text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white italic">
-            Hardware Run?
-          </span>
-        </h2>
-        <p className="text-text-muted font-mono text-sm mb-10 border-l-2 border-white/20 pl-4 text-left inline-block">
-          p-ink units are currently in fabrication. <br />
-          Register ID to lock in unit 001 allocation.
-        </p>
-
-        <br />
-
-        <Link
-          href="/auth/sign-up"
-          className="inline-flex items-center gap-4 bg-neon-blue/10 border-2 border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-bg-dark font-black uppercase tracking-[0.2em] px-10 py-4 transition-all duration-300 shadow-[0_0_20px_rgba(5,217,232,0.2)] hover:shadow-[0_0_40px_rgba(5,217,232,0.6)] group"
-          style={{
-            clipPath:
-              "polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px)",
-          }}
-        >
-          <span>Secure Hardware</span>
-          <span className="font-mono text-xs group-hover:translate-x-2 transition-transform">
-            &gt;&gt;
-          </span>
-        </Link>
-      </div>
-    </section>
-  );
-};
-
-const Footer = () => {
-  return (
-    <footer className="py-6 px-6 border-t border-white/10 bg-bg-dark text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4 font-mono text-xs text-text-muted uppercase tracking-widest">
-      <div className="flex items-center gap-2">
-        <span className="text-neon-pink">P-INK</span>
-        <span>OS_VERSION: 2026.1</span>
-      </div>
-      <div>[ SECURE CONNECTION ESTABLISHED ]</div>
-    </footer>
-  );
-};
-
-export default function HomePage() {
-  return (
-    <main className="bg-bg-dark min-h-screen text-text-main relative selection:bg-neon-pink/30 selection:text-white">
-      <div className="fixed inset-0 pointer-events-none z-[100] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20 mix-blend-overlay" />
-
-      <CyberNav />
-      <HeroDashboard />
-      <ArchitectureFlow />
-      <SpecsCollage />
-      <CTASequence />
-      <Footer />
-    </main>
+      <style>{`
+        @keyframes scan {
+          0%   { top: 5%;  opacity: 0; }
+          5%   { opacity: 1; }
+          90%  { opacity: 0.4; }
+          100% { top: 95%; opacity: 0; }
+        }
+      `}</style>
+    </div>
   );
 }

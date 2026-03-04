@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
 import "../styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { UserProvider } from "@/providers/UserProvider";
+import { Syne, Space_Mono } from "next/font/google";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -10,6 +11,12 @@ const cormorant = Cormorant_Garamond({
   style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-syne",
 });
 
 const instrument = Instrument_Sans({
@@ -38,7 +45,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${instrument.variable}`}>
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${syne.variable} ${instrument.variable}`}
+    >
       <body className="font-body antialiased bg-cream text-ink font-[400] selection:bg-rose/20 selection:text-deep">
         <ClerkProvider>
           <UserProvider>{children}</UserProvider>
