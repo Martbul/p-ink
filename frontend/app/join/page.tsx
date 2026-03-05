@@ -21,54 +21,41 @@ function JoinPageInner() {
   const [fetchError, setFetchError] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
-  // Guard so the join effect only fires once
   const hasJoinedRef = useRef(false);
 
-  // ── 1. Fetch invite info (public, no auth needed) ──────────────────────────
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     api
       .getInviteInfo(token)
       .then((data) => { if (!cancelled) setInfo(data); })
-      .catch((err: ApiError) => {
+      .catch((err: unknown) => {
         if (!cancelled) {
-          setFetchError(
-            err.status === 410
+          if (err instanceof ApiError) {
+            setFetchError((err as ApiError & { status: number }).status === 410
               ? "This invite has already been used or has expired."
               : "Invalid invite link."
-          );
+            );
+          } else {
+            setFetchError("Invalid invite link.");
+          }
         }
       });
     return () => { cancelled = true; };
   }, [token]);
 
-  // ── 2. Auto-join once signed in + info loaded ──────────────────────────────
-  // Key fix: we do NOT redirect to /dashboard if couple already exists here —
-  // we only redirect AFTER a successful join (or if couple was already active
-  // for THIS token, meaning the user already joined successfully before).
   useEffect(() => {
-    if (!clerkLoaded || userLoading) return;     // Clerk / DB not ready yet
-    if (!isSignedIn) return;                     // Not signed in — show preview
-    if (!info) return;                           // Invite not loaded yet
-    if (joining || hasJoinedRef.current) return; // Already in progress
+    if (!clerkLoaded || userLoading) return;
+    if (!isSignedIn) return;
+    if (!info) return;
+    if (joining || hasJoinedRef.current) return;
 
-    // If this user is already in an ACTIVE couple, they may have just
-    // completed the join flow and been redirected back here — send them home.
-    if (couple?.status === "active") {
-      router.replace("/dashboard");
-      return;
-    }
-
-    // If they're in a PENDING couple (they created one themselves), they
-    // can't join someone else's — show a meaningful error instead of silently
-    // redirecting away.
+    if (couple?.status === "active") { router.replace("/dashboard"); return; }
     if (couple && couple.status !== "active") {
       setJoinError("You're already in a pending couple. You cannot join another.");
       return;
     }
 
-    // Happy path: signed in, no couple, valid invite → join
     hasJoinedRef.current = true;
     setJoining(true);
 
@@ -80,7 +67,7 @@ function JoinPageInner() {
         await refetch();
         router.replace("/dashboard");
       } catch (err) {
-        hasJoinedRef.current = false; // allow retry
+        hasJoinedRef.current = false;
         setJoinError((err as Error).message ?? "Could not join couple");
         setJoining(false);
       }
@@ -88,31 +75,24 @@ function JoinPageInner() {
     doJoin();
   }, [clerkLoaded, userLoading, isSignedIn, info, couple, token, joining, getToken, refetch, router]);
 
-  // ── Render: no token ───────────────────────────────────────────────────────
   if (!token) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-6 bg-cream">
-        <p className="font-display text-3xl italic text-rose text-center">
-          Missing invite token.
-        </p>
+        <p className="font-display text-3xl italic text-rose text-center">Missing invite token.</p>
         <Link href="/"><Button variant="ghost">Back to home</Button></Link>
       </div>
     );
   }
 
-  // ── Render: loading / joining ──────────────────────────────────────────────
   if ((!info && !fetchError) || (isSignedIn && (userLoading || joining))) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-cream">
         <Spinner />
-        <p className="font-display text-lg italic text-muted">
-          {joining ? "Connecting you both…" : "Loading…"}
-        </p>
+        <p className="font-display text-lg italic text-muted">{joining ? "Connecting you both…" : "Loading…"}</p>
       </div>
     );
   }
 
-  // ── Render: errors ─────────────────────────────────────────────────────────
   const error = fetchError || joinError;
   if (error) {
     return (
@@ -123,38 +103,26 @@ function JoinPageInner() {
     );
   }
 
-  // ── Render: not signed in — invite preview ─────────────────────────────────
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
-      style={{ background: "linear-gradient(160deg, var(--cream) 0%, var(--warm) 100%)" }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
+      style={{ background: "linear-gradient(160deg, var(--cream) 0%, var(--warm) 100%)" }}>
       <Link href="/" className="font-display text-xl font-light text-deep mb-12">
         p<em className="italic text-rose">-ink</em>
       </Link>
-
       <div className="w-full max-w-md bg-white rounded-3xl p-10 shadow-xl border border-[rgba(232,197,176,0.3)]">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-          style={{ background: "var(--warm)", color: "var(--terra)" }}
-        >
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
+          style={{ background: "var(--warm)", color: "var(--terra)" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </div>
-
         <h2 className="font-display text-4xl font-light text-deep mb-3">
-          <em className="italic text-terra">{info?.invited_by.name ?? "Someone"}</em>{" "}
-          invited you.
+          <em className="italic text-terra">{info?.invited_by.name ?? "Someone"}</em>{" "}invited you.
         </h2>
         <p className="text-sm text-muted mb-8 leading-relaxed" style={{ fontWeight: 300 }}>
-          Sign in with Google to accept the invite and connect your accounts.
-          The link expires{" "}
-          {info
-            ? new Date(info.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })
-            : "soon"}.
+          Sign in with Google to accept the invite and connect your accounts. The link expires{" "}
+          {info ? new Date(info.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric" }) : "soon"}.
         </p>
-
         <Link href={`/auth?redirect_url=/join?token=${token}`}>
           <Button variant="primary" full>Sign in to accept →</Button>
         </Link>
@@ -165,13 +133,7 @@ function JoinPageInner() {
 
 export default function JoinPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-cream">
-          <Spinner />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream"><Spinner /></div>}>
       <JoinPageInner />
     </Suspense>
   );

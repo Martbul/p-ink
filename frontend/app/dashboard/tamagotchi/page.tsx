@@ -123,7 +123,7 @@ const SECTION_TABS = [
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 
-function Label({ children }) {
+function Label({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ fontFamily:"'Courier New',monospace", fontSize:"0.58rem",
       letterSpacing:"0.18em", textTransform:"uppercase", color:C.muted, marginBottom:"0.8rem" }}>
@@ -132,7 +132,7 @@ function Label({ children }) {
   );
 }
 
-function Pill({ color=C.cyan, pulse=false, children }) {
+function Pill({ color=C.cyan, pulse=false, children }: { color?: string; pulse?: boolean; children: React.ReactNode }) {
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:"0.3rem",
       padding:"0.18rem 0.55rem", border:`1px solid ${color}`, color,
@@ -146,7 +146,7 @@ function Pill({ color=C.cyan, pulse=false, children }) {
   );
 }
 
-function Card({ children, style={} }) {
+function Card({ children, style={} }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{ background:C.panel, border:`1px solid ${C.border}`,
       clipPath:clip.lg, padding:"1.3rem", ...style }}>
@@ -157,7 +157,7 @@ function Card({ children, style={} }) {
 
 // ─── Frame preview ─────────────────────────────────────────────────────────────
 
-function FramePreview({ cfg }) {
+function FramePreview({ cfg }: { cfg: any }) {
   const charReg = CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
   const anim    = ANIMATIONS.find(a => a.id === cfg.animation) ?? ANIMATIONS[0];
   const outfit  = OUTFITS.find(o => o.id === cfg.outfit);
@@ -228,7 +228,7 @@ function FramePreview({ cfg }) {
 
 // ─── Screen reorder ───────────────────────────────────────────────────────────
 
-function ScreenReorder({ screens, onChange }) {
+function ScreenReorder({ screens, onChange }: { screens: any[]; onChange: (screens: any[]) => void }) {
   const [dragging, setDragging] = useState(null);
   const [over,     setOver]     = useState(null);
 
@@ -240,7 +240,7 @@ function ScreenReorder({ screens, onChange }) {
     onChange(arr); setDragging(null); setOver(null);
   };
 
-  const toggle = (id) => {
+  const toggle = (id: string) => {
     const meta = ALL_SCREENS.find(s => s.id === id);
     if (meta?.locked) return;
     if (screens.find(s => s.id === id)) {
@@ -340,7 +340,7 @@ function ScreenReorder({ screens, onChange }) {
 
 // ─── Position grid ─────────────────────────────────────────────────────────────
 
-function PositionGrid({ value, onChange }) {
+function PositionGrid({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <div style={{ display:"inline-grid", gridTemplateColumns:"repeat(3,56px)",
       gridTemplateRows:"repeat(3,56px)", gap:4 }}>
@@ -381,7 +381,7 @@ export default function TamagotchiPage() {
     {id:"tamagotchi"},{id:"photo-replay"},{id:"photo-slideshow"},{id:"custom-screen"},
   ]);
 
-  const set = useCallback((k) => (v) => setCfg(c => ({ ...c, [k]:v })), []);
+  const set = useCallback((k: string) => (v: any) => setCfg(c => ({ ...c, [k]:v })), []);
 
   const handleSave = () => {
     try { localStorage.setItem("tama_config", JSON.stringify(cfg)); } catch {}
@@ -665,13 +665,11 @@ export default function TamagotchiPage() {
               </>
             )}
 
-            {/* SCREENS */}
             {tab === 6 && <ScreenReorder screens={screens} onChange={setScreens} />}
 
           </Card>
         </div>
 
-        {/* RIGHT: sticky preview */}
         <div style={{ display:"flex", flexDirection:"column", gap:"0.85rem", position:"sticky", top:"1.75rem" }}>
 
           <Card>
