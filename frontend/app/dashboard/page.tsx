@@ -28,55 +28,302 @@ const C = {
   white: "#ffffff",
 };
 
-const SPECIES_EMOJI: Record<string, string> = {
-  bear: "🐻",
-  cat: "🐱",
-  bunny: "🐰",
-  dog: "🐶",
-  shark: "🦈",
-  fox: "🦊",
-  penguin: "🐧",
+const OUTFIT_EMOJI: Record<string, React.ReactNode> = {
+  none: null,
+  hoodie: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M4 10V20h16V10 M4 10l8-6 8 6 M12 4v6 M8 20v-4 M16 20v-4" />
+    </svg>
+  ),
+  suit: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M5 8v12h14V8 M12 3l-3 5h6z M12 8v12 M9 15h6" />
+    </svg>
+  ),
+  tshirt: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M5 5l-3 4h3v11h14V9h3l-3-4H5z M10 5v2h4V5" />
+    </svg>
+  ),
+  kimono: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M4 6h16v16H4z M12 6L4 22 M12 6l8 16 M8 12h8" />
+    </svg>
+  ),
+  armor: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M4 4h16v8c0 6-8 10-8 10S4 18 4 12V4z M4 10h16 M12 4v18 M8 15h8" />
+    </svg>
+  ),
+  labcoat: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M6 4v18h12V4 M9 4v4 M15 4v4 M12 8v14 M8 14h2 M14 14h2" />
+    </svg>
+  ),
+  spacesuit: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M6 10v12h4v-4h4v4h4V10 M12 2A4 4 0 0 0 8 6v4h8V6a4 4 0 0 0-4-4z M9 14h6" />
+    </svg>
+  ),
 };
 
-const OUTFIT_EMOJI: Record<string, string> = {
-  none: "",
-  hoodie: "🧥",
-  suit: "👔",
-  tshirt: "👕",
-  kimono: "🥻",
-  armor: "🛡️",
-  labcoat: "🥼",
-  spacesuit: "🚀",
-};
-const ACC_EMOJI: Record<string, string> = {
-  none: "",
-  crown: "👑",
-  glasses: "👓",
-  shades: "🕶️",
-  tophat: "🎩",
-  bow: "🎀",
-  headphones: "🎧",
-  halo: "😇",
+const ACC_EMOJI: Record<string, React.ReactNode> = {
+  none: null,
+  crown: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M2 20h20 M4 20L2 8l5 4 5-8 5 4 5-4-2 12" />
+    </svg>
+  ),
+  glasses: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <rect x="2" y="10" width="8" height="6" />
+      <rect x="14" y="10" width="8" height="6" />
+      <line x1="10" y1="13" x2="14" y2="13" />
+    </svg>
+  ),
+  shades: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M2 10h8v6H2z M14 10h8v6h-8z M10 12h4 M2 10l2-2 M22 10l-2-2" />
+      <path d="M2 10h8v6 M14 10h8v6" fill="currentColor" opacity="0.5" />
+    </svg>
+  ),
+  tophat: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M2 18h20 M6 18V4h12v14 M6 14h12" />
+    </svg>
+  ),
+  bow: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M12 12l8-6v12z M12 12L4 6v12z M10 10h4v4h-4z" />
+    </svg>
+  ),
+  headphones: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <path d="M4 14A8 8 0 0 1 20 14 M2 14h4v6H2z M18 14h4v6h-4z" />
+    </svg>
+  ),
+  halo: (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <ellipse cx="12" cy="6" rx="8" ry="3" />
+      <line x1="12" y1="9" x2="12" y2="12" />
+    </svg>
+  ),
 };
 
 const ACC_STYLES: Record<string, React.CSSProperties> = {
-  crown: { top: "-25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.4em", zIndex: 20 },
-  glasses: { top: "25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.2em", zIndex: 20 },
-  shades: { top: "25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.2em", zIndex: 20 },
-  tophat: { top: "-35%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 20 },
-  bow: { top: "-10%", left: "75%", transform: "translateX(-50%) rotate(15deg)", fontSize: "1em", zIndex: 20 },
-  headphones: { top: "15%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 20 },
-  halo: { top: "-40%", left: "50%", transform: "translateX(-50%)", fontSize: "1.3em", zIndex: 20 },
+  crown: {
+    top: "-25%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.4em",
+    zIndex: 20,
+  },
+  glasses: {
+    top: "25%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.2em",
+    zIndex: 20,
+  },
+  shades: {
+    top: "25%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.2em",
+    zIndex: 20,
+  },
+  tophat: {
+    top: "-35%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.6em",
+    zIndex: 20,
+  },
+  bow: {
+    top: "-10%",
+    left: "75%",
+    transform: "translateX(-50%) rotate(15deg)",
+    fontSize: "1em",
+    zIndex: 20,
+  },
+  headphones: {
+    top: "15%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.6em",
+    zIndex: 20,
+  },
+  halo: {
+    top: "-40%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.3em",
+    zIndex: 20,
+  },
 };
 
 const OUTFIT_STYLES: Record<string, React.CSSProperties> = {
-  hoodie: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  suit: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  tshirt: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  kimono: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  armor: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  labcoat: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
-  spacesuit: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 15 },
+  hoodie: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  suit: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  tshirt: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  kimono: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  armor: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  labcoat: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.5em",
+    zIndex: 15,
+  },
+  spacesuit: {
+    bottom: "-10%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "1.6em",
+    zIndex: 15,
+  },
 };
 const ANIM_CSS: Record<string, string> = {
   idle: "tamaBreathe 3s ease-in-out infinite",
@@ -1288,9 +1535,6 @@ function DrawTab() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QUEUE
-// ─────────────────────────────────────────────────────────────────────────────
 function QueuePanel() {
   const { content, user, deleteContent } = useUser();
   const items = content.filter((c) => c.status !== "archived");
@@ -1477,10 +1721,6 @@ function QueuePanel() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SIDEBAR WIDGETS
-// ─────────────────────────────────────────────────────────────────────────────
-
 function PartnerWidget() {
   const { partnerUser, coupleDevices, user } = useUser();
   if (!partnerUser) return null;
@@ -1562,11 +1802,278 @@ function PartnerWidget() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TAMAGOTCHI WIDGET — live preview of the companion, links to Studio
-// ─────────────────────────────────────────────────────────────────────────────
+// function TamagotchiWidget() {
+//   const [cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
+
+//   useEffect(() => {
+//     setCfg(loadTamaConfig());
+//   }, []);
+
+//   useEffect(() => {
+//     function onStorage(e: StorageEvent) {
+//       if (e.key === TAMA_STORAGE_KEY) setCfg(loadTamaConfig());
+//     }
+//     window.addEventListener("storage", onStorage);
+//     return () => window.removeEventListener("storage", onStorage);
+//   }, []);
+
+//   const charReg = CHAR_REGISTRY[cfg.species];
+//   const outfitEmoji = OUTFIT_EMOJI[cfg.outfit];
+//   const accEmoji = ACC_EMOJI[cfg.accessory];
+//   const animCss = ANIM_CSS[cfg.animation] ?? ANIM_CSS.idle;
+
+//   return (
+//     <div
+//       className="relative overflow-hidden"
+//       style={{ clipPath: polyRev, border: "1px solid rgba(255,255,255,0.07)" }}
+//     >
+//       <div
+//         className="relative w-full overflow-hidden"
+//         style={{ aspectRatio: "800/480", background: "#060610" }}
+//       >
+//         <div className="absolute inset-0">
+//           <PixelBg type={cfg.background} scale={5} fillParent />
+//         </div>
+
+//         <div
+//           className="absolute inset-0 pointer-events-none z-10"
+//           style={{
+//             backgroundImage:
+//               "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px)",
+//           }}
+//         />
+//         <div
+//           className="absolute inset-0 pointer-events-none z-10"
+//           style={{
+//             background:
+//               "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.6) 100%)",
+//           }}
+//         />
+//         {[
+//           {
+//             top: 4,
+//             left: 4,
+//             borderTop: `1px solid ${C.cyan}50`,
+//             borderLeft: `1px solid ${C.cyan}50`,
+//           },
+//           {
+//             top: 4,
+//             right: 4,
+//             borderTop: `1px solid ${C.cyan}50`,
+//             borderRight: `1px solid ${C.cyan}50`,
+//           },
+//           {
+//             bottom: 4,
+//             left: 4,
+//             borderBottom: `1px solid ${C.cyan}50`,
+//             borderLeft: `1px solid ${C.cyan}50`,
+//           },
+//           {
+//             bottom: 4,
+//             right: 4,
+//             borderBottom: `1px solid ${C.cyan}50`,
+//             borderRight: `1px solid ${C.cyan}50`,
+//           },
+//         ].map((s, i) => (
+//           <div
+//             key={i}
+//             className="absolute w-2.5 h-2.5 pointer-events-none z-20"
+//             style={s}
+//           />
+//         ))}
+
+//         <div
+//           className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+//           style={{ animation: animCss }}
+//         >
+//           <div
+//             className="relative inline-flex items-center justify-center"
+//             style={{ fontSize: "2.5rem" }}
+//           >
+//             <div
+//               style={{
+//                 filter: `drop-shadow(0 0 8px ${C.cyan}40)`,
+//                 position: "relative",
+//                 zIndex: 10,
+//               }}
+//             >
+//               {charReg ? (
+//                 <AnimatedSprite
+//                   frames={charReg.idle}
+//                   palette={charReg.palette}
+//                   scale={5}
+//                   fps={3}
+//                 />
+//               ) : (
+//                 <span style={{ fontSize: "1.5rem" }}>{cfg.species}</span>
+//               )}
+//             </div>
+
+//             {outfitEmoji && outfitEmoji !== "" && (
+//               <div
+//                 className="absolute drop-shadow-md"
+//                 style={{ ...OUTFIT_STYLES[cfg.outfit], pointerEvents: "none" }}
+//               >
+//                 {outfitEmoji}
+//               </div>
+//             )}
+
+//             {accEmoji && accEmoji !== "" && (
+//               <div
+//                 className="absolute drop-shadow-md"
+//                 style={{ ...ACC_STYLES[cfg.accessory], pointerEvents: "none" }}
+//               >
+//                 {accEmoji}
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* HUD Elements */}
+//         <div
+//           className="absolute bottom-1 left-2 font-mono leading-none z-30"
+//           style={{ fontSize: "0.45rem", color: `${C.cyan}70` }}
+//         >
+//           ❤ 87 · ⚡ 64 · LVL 7
+//         </div>
+//         <div
+//           className="absolute top-1.5 right-2 font-mono leading-none z-30"
+//           style={{ fontSize: "0.42rem", color: `${C.purple}80` }}
+//         >
+//           {ANIM_CSS[cfg.animation] ? cfg.animation.toUpperCase() : "IDLE"}
+//         </div>
+//       </div>
+
+//       <div
+//         className="px-3 py-2.5"
+//         style={{
+//           background: "rgba(255,255,255,0.015)",
+//           borderTop: "1px solid rgba(255,255,255,0.06)",
+//         }}
+//       >
+//         <div className="flex items-center justify-between mb-1.5">
+//           <div>
+//             <p
+//               className="font-mono text-[8px] uppercase tracking-[0.2em]"
+//               style={{ color: "rgba(255,255,255,0.2)" }}
+//             >
+//               Companion · on your frame
+//             </p>
+//             <p
+//               className="font-bold uppercase tracking-tight leading-tight mt-0.5"
+//               style={{
+//                 fontFamily: "'Syne', sans-serif",
+//                 fontSize: 12,
+//                 color: "rgba(255,255,255,0.75)",
+//               }}
+//             >
+//               {charReg ? charReg.name : cfg.species} · {cfg.animation}
+//             </p>
+//           </div>
+//           <Link
+//             href="/dashboard/tamagotchi"
+//             className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest px-2.5 py-1.5 transition-all"
+//             style={{
+//               clipPath: polyXs,
+//               border: `1px solid ${C.purple}40`,
+//               background: `${C.purple}0c`,
+//               color: `${C.purple}cc`,
+//             }}
+//             onMouseEnter={(e) => {
+//               const el = e.currentTarget as HTMLAnchorElement;
+//               el.style.borderColor = C.purple;
+//               el.style.color = C.purple;
+//               el.style.background = `${C.purple}20`;
+//             }}
+//             onMouseLeave={(e) => {
+//               const el = e.currentTarget as HTMLAnchorElement;
+//               el.style.borderColor = `${C.purple}40`;
+//               el.style.color = `${C.purple}cc`;
+//               el.style.background = `${C.purple}0c`;
+//             }}
+//           >
+//             <svg
+//               width="9"
+//               height="9"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="2.5"
+//             >
+//               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+//               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+//             </svg>
+//             Studio
+//           </Link>
+//         </div>
+
+//         <div className="flex flex-col gap-1">
+//           {[
+//             {
+//               label: "Health",
+//               val: 72,
+//               color: `linear-gradient(90deg,${C.cyan},${C.purple})`,
+//             },
+//             {
+//               label: "XP",
+//               val: 45,
+//               color: `linear-gradient(90deg,${C.purple},${C.pink})`,
+//             },
+//           ].map((s) => (
+//             <div key={s.label}>
+//               <div className="flex justify-between mb-0.5">
+//                 <span
+//                   className="font-mono text-[7px] uppercase tracking-widest"
+//                   style={{ color: "rgba(255,255,255,0.2)" }}
+//                 >
+//                   {s.label}
+//                 </span>
+//                 <span
+//                   className="font-mono text-[7px]"
+//                   style={{ color: "rgba(255,255,255,0.3)" }}
+//                 >
+//                   {s.val}%
+//                 </span>
+//               </div>
+//               <div
+//                 className="h-0.5 relative"
+//                 style={{ background: "rgba(255,255,255,0.05)" }}
+//               >
+//                 <div
+//                   className="absolute left-0 top-0 h-full transition-all duration-500"
+//                   style={{ width: `${s.val}%`, background: s.color }}
+//                 />
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+
+//         <p
+//           className="font-mono text-[7px] uppercase tracking-widest mt-2 pt-2"
+//           style={{
+//             color: "rgba(255,255,255,0.1)",
+//             borderTop: "1px solid rgba(255,255,255,0.04)",
+//           }}
+//         >
+//           ↺ Partner content keeps them alive
+//         </p>
+//       </div>
+
+//       <style>{`
+//           @keyframes tamaBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+//           @keyframes tamaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14%)}}
+//           @keyframes tamaSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+//           @keyframes tamaWave{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+//           @keyframes tamaDance{0%,100%{transform:translateX(-8%) rotate(-6deg)}50%{transform:translateX(8%) rotate(6deg)}}
+//           @keyframes tamaSleep{0%,100%{transform:scale(1) rotate(-4deg);opacity:.75}50%{transform:scale(.95) rotate(4deg);opacity:1}}
+//           @keyframes tamaHyper{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-18%) scale(1.12)}75%{transform:translateY(-9%) scale(1.06)}}
+//           @keyframes tamaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12%)}}
+//         `}</style>
+//     </div>
+//   );
+// }
 function TamagotchiWidget() {
-  const [cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
+  const[cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
 
   useEffect(() => {
     setCfg(loadTamaConfig());
@@ -1590,17 +2097,14 @@ function TamagotchiWidget() {
       className="relative overflow-hidden"
       style={{ clipPath: polyRev, border: "1px solid rgba(255,255,255,0.07)" }}
     >
-      {/* ── Mini frame canvas (800×480 aspect, shrunk) ── */}
       <div
         className="relative w-full overflow-hidden"
         style={{ aspectRatio: "800/480", background: "#060610" }}
       >
-        {/* Render Live Pixel Background */}
         <div className="absolute inset-0">
           <PixelBg type={cfg.background} scale={5} fillParent />
         </div>
 
-        {/* Scanlines */}
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
@@ -1608,7 +2112,6 @@ function TamagotchiWidget() {
               "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px)",
           }}
         />
-        {/* Vignette */}
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
@@ -1616,7 +2119,6 @@ function TamagotchiWidget() {
               "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.6) 100%)",
           }}
         />
-        {/* Corner accents */}
         {[
           { top: 4, left: 4, borderTop: `1px solid ${C.cyan}50`, borderLeft: `1px solid ${C.cyan}50` },
           { top: 4, right: 4, borderTop: `1px solid ${C.cyan}50`, borderRight: `1px solid ${C.cyan}50` },
@@ -1626,37 +2128,32 @@ function TamagotchiWidget() {
           <div key={i} className="absolute w-2.5 h-2.5 pointer-events-none z-20" style={s} />
         ))}
 
-        {/* COMPANION RENDERER */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
           style={{ animation: animCss }}
         >
-          {/* Relative wrapper for compositing */}
-          <div className="relative inline-flex items-center justify-center" style={{ fontSize: "2.5rem" }}>
+          <div className="relative inline-flex items-center justify-center" style={{ fontSize: "2.5rem", color: C.cyan }}>
             
-            {/* Base Pixel Art Character */}
             <div style={{ filter: `drop-shadow(0 0 8px ${C.cyan}40)`, position: "relative", zIndex: 10 }}>
               {charReg ? (
                 <AnimatedSprite frames={charReg.idle} palette={charReg.palette} scale={5} fps={3} />
               ) : (
-                <div style={{ fontSize: "2.4rem" }}>{SPECIES_EMOJI[cfg.species] ?? "🐱"}</div>
+                <span style={{ fontSize: "1.5rem" }}>{cfg.species}</span>
               )}
             </div>
 
-            {/* Outfit Layer (Body/Bottom) */}
-            {outfitEmoji && outfitEmoji !== "" && (
+            {outfitEmoji && (
               <div 
-                className="absolute drop-shadow-md" 
+                className="absolute drop-shadow-md flex items-center justify-center" 
                 style={{ ...OUTFIT_STYLES[cfg.outfit], pointerEvents: "none" }}
               >
                 {outfitEmoji}
               </div>
             )}
 
-            {/* Accessory Layer (Head/Face) */}
-            {accEmoji && accEmoji !== "" && (
+            {accEmoji && (
               <div 
-                className="absolute drop-shadow-md" 
+                className="absolute drop-shadow-md flex items-center justify-center" 
                 style={{ ...ACC_STYLES[cfg.accessory], pointerEvents: "none" }}
               >
                 {accEmoji}
@@ -1743,7 +2240,6 @@ function TamagotchiWidget() {
           </Link>
         </div>
 
-        {/* Stat bars */}
         <div className="flex flex-col gap-1">
           {[
             {
@@ -1809,283 +2305,6 @@ function TamagotchiWidget() {
     </div>
   );
 }
-
-// function TamagotchiWidget() {
-//   const [cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
-
-//   // Sync from localStorage on mount (populated by tamagotchi/page.tsx on save)
-//   useEffect(() => {
-//     setCfg(loadTamaConfig());
-//   }, []);
-
-//   // Listen for storage events so the widget updates if the Studio saves in another tab
-//   useEffect(() => {
-//     function onStorage(e: StorageEvent) {
-//       if (e.key === TAMA_STORAGE_KEY) setCfg(loadTamaConfig());
-//     }
-//     window.addEventListener("storage", onStorage);
-//     return () => window.removeEventListener("storage", onStorage);
-//   }, []);
-
-//   const bgColors = BG_COLORS[cfg.background] ?? BG_COLORS.cyber;
-//   const speciesEmoji = SPECIES_EMOJI[cfg.species] ?? "🐱";
-//   const outfitEmoji = OUTFIT_EMOJI[cfg.outfit] ?? "";
-//   const accEmoji = ACC_EMOJI[cfg.accessory] ?? "";
-//   const animCss = ANIM_CSS[cfg.animation] ?? ANIM_CSS.idle;
-
-//   return (
-//     <div
-//       className="relative overflow-hidden"
-//       style={{ clipPath: polyRev, border: "1px solid rgba(255,255,255,0.07)" }}
-//     >
-//       {/* ── Mini frame canvas (800×480 aspect, shrunk) ── */}
-//       <div
-//         className="relative w-full"
-//         style={{
-//           aspectRatio: "800/480",
-//           background: `linear-gradient(150deg, ${bgColors[0]}, ${bgColors[1]})`,
-//         }}
-//       >
-//         {/* Scanlines */}
-//         <div
-//           className="absolute inset-0 pointer-events-none"
-//           style={{
-//             backgroundImage:
-//               "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px)",
-//           }}
-//         />
-//         {/* Grid */}
-//         <div
-//           className="absolute inset-0 pointer-events-none"
-//           style={{
-//             backgroundImage: `linear-gradient(${C.cyan}08 1px,transparent 1px),linear-gradient(90deg,${C.cyan}08 1px,transparent 1px)`,
-//             backgroundSize: "20px 20px",
-//           }}
-//         />
-//         {/* Vignette */}
-//         <div
-//           className="absolute inset-0 pointer-events-none"
-//           style={{
-//             background:
-//               "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.6) 100%)",
-//           }}
-//         />
-//         {/* Corner accents */}
-//         {[
-//           {
-//             top: 4,
-//             left: 4,
-//             borderTop: `1px solid ${C.cyan}50`,
-//             borderLeft: `1px solid ${C.cyan}50`,
-//           },
-//           {
-//             top: 4,
-//             right: 4,
-//             borderTop: `1px solid ${C.cyan}50`,
-//             borderRight: `1px solid ${C.cyan}50`,
-//           },
-//           {
-//             bottom: 4,
-//             left: 4,
-//             borderBottom: `1px solid ${C.cyan}50`,
-//             borderLeft: `1px solid ${C.cyan}50`,
-//           },
-//           {
-//             bottom: 4,
-//             right: 4,
-//             borderBottom: `1px solid ${C.cyan}50`,
-//             borderRight: `1px solid ${C.cyan}50`,
-//           },
-//         ].map((s, i) => (
-//           <div
-//             key={i}
-//             className="absolute w-2.5 h-2.5 pointer-events-none"
-//             style={s}
-//           />
-//         ))}
-
-//         <div
-//           className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-//           style={{ animation: animCss }}
-//         >
-//           {accEmoji && (
-//             <div
-//               style={{
-//                 fontSize: "clamp(0.6rem,2.5vw,1rem)",
-//                 lineHeight: 1,
-//                 marginBottom: "-0.2rem",
-//               }}
-//             >
-//               {accEmoji}
-//             </div>
-//           )}
-//           <div
-//             style={{
-//               fontSize: "clamp(1.4rem,6vw,2.4rem)",
-//               lineHeight: 1,
-//               filter: `drop-shadow(0 0 8px ${C.cyan}40)`,
-//             }}
-//           >
-//             {speciesEmoji}
-//           </div>
-//           {outfitEmoji && (
-//             <div
-//               style={{
-//                 fontSize: "clamp(0.5rem,2vw,0.85rem)",
-//                 lineHeight: 1,
-//                 marginTop: "-0.15rem",
-//               }}
-//             >
-//               {outfitEmoji}
-//             </div>
-//           )}
-//         </div>
-
-//         <div
-//           className="absolute bottom-1 left-2 font-mono leading-none"
-//           style={{ fontSize: "0.45rem", color: `${C.cyan}70` }}
-//         >
-//           ❤ 87 · ⚡ 64 · LVL 7
-//         </div>
-//         <div
-//           className="absolute top-1.5 right-2 font-mono leading-none"
-//           style={{ fontSize: "0.42rem", color: `${C.purple}80` }}
-//         >
-//           {ANIM_CSS[cfg.animation] ? cfg.animation.toUpperCase() : "IDLE"}
-//         </div>
-//       </div>
-
-//       <div
-//         className="px-3 py-2.5"
-//         style={{
-//           background: "rgba(255,255,255,0.015)",
-//           borderTop: "1px solid rgba(255,255,255,0.06)",
-//         }}
-//       >
-//         <div className="flex items-center justify-between mb-1.5">
-//           <div>
-//             <p
-//               className="font-mono text-[8px] uppercase tracking-[0.2em]"
-//               style={{ color: "rgba(255,255,255,0.2)" }}
-//             >
-//               Companion · on your frame
-//             </p>
-//             <p
-//               className="font-bold uppercase tracking-tight leading-tight mt-0.5"
-//               style={{
-//                 fontFamily: "'Syne', sans-serif",
-//                 fontSize: 12,
-//                 color: "rgba(255,255,255,0.75)",
-//               }}
-//             >
-//               {cfg.species.charAt(0).toUpperCase() + cfg.species.slice(1)} ·{" "}
-//               {cfg.animation}
-//             </p>
-//           </div>
-//           <Link
-//             href="/dashboard/tamagotchi"
-//             className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest px-2.5 py-1.5 transition-all"
-//             style={{
-//               clipPath: polyXs,
-//               border: `1px solid ${C.purple}40`,
-//               background: `${C.purple}0c`,
-//               color: `${C.purple}cc`,
-//             }}
-//             onMouseEnter={(e) => {
-//               const el = e.currentTarget as HTMLAnchorElement;
-//               el.style.borderColor = C.purple;
-//               el.style.color = C.purple;
-//               el.style.background = `${C.purple}20`;
-//             }}
-//             onMouseLeave={(e) => {
-//               const el = e.currentTarget as HTMLAnchorElement;
-//               el.style.borderColor = `${C.purple}40`;
-//               el.style.color = `${C.purple}cc`;
-//               el.style.background = `${C.purple}0c`;
-//             }}
-//           >
-//             <svg
-//               width="9"
-//               height="9"
-//               viewBox="0 0 24 24"
-//               fill="none"
-//               stroke="currentColor"
-//               strokeWidth="2.5"
-//             >
-//               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-//               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-//             </svg>
-//             Studio
-//           </Link>
-//         </div>
-
-//         {/* Stat bars */}
-//         <div className="flex flex-col gap-1">
-//           {[
-//             {
-//               label: "Health",
-//               val: 72,
-//               color: `linear-gradient(90deg,${C.cyan},${C.purple})`,
-//             },
-//             {
-//               label: "XP",
-//               val: 45,
-//               color: `linear-gradient(90deg,${C.purple},${C.pink})`,
-//             },
-//           ].map((s) => (
-//             <div key={s.label}>
-//               <div className="flex justify-between mb-0.5">
-//                 <span
-//                   className="font-mono text-[7px] uppercase tracking-widest"
-//                   style={{ color: "rgba(255,255,255,0.2)" }}
-//                 >
-//                   {s.label}
-//                 </span>
-//                 <span
-//                   className="font-mono text-[7px]"
-//                   style={{ color: "rgba(255,255,255,0.3)" }}
-//                 >
-//                   {s.val}%
-//                 </span>
-//               </div>
-//               <div
-//                 className="h-0.5 relative"
-//                 style={{ background: "rgba(255,255,255,0.05)" }}
-//               >
-//                 <div
-//                   className="absolute left-0 top-0 h-full transition-all duration-500"
-//                   style={{ width: `${s.val}%`, background: s.color }}
-//                 />
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-
-//         <p
-//           className="font-mono text-[7px] uppercase tracking-widest mt-2 pt-2"
-//           style={{
-//             color: "rgba(255,255,255,0.1)",
-//             borderTop: "1px solid rgba(255,255,255,0.04)",
-//           }}
-//         >
-//           ↺ Partner content keeps them alive
-//         </p>
-//       </div>
-
-//       <style>{`
-//         @keyframes tamaBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-//         @keyframes tamaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14%)}}
-//         @keyframes tamaSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-//         @keyframes tamaWave{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
-//         @keyframes tamaDance{0%,100%{transform:translateX(-8%) rotate(-6deg)}50%{transform:translateX(8%) rotate(6deg)}}
-//         @keyframes tamaSleep{0%,100%{transform:scale(1) rotate(-4deg);opacity:.75}50%{transform:scale(.95) rotate(4deg);opacity:1}}
-//         @keyframes tamaHyper{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-18%) scale(1.12)}75%{transform:translateY(-9%) scale(1.06)}}
-//         @keyframes tamaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12%)}}
-//       `}</style>
-//     </div>
-//   );
-// }
-
 function MyFrameWidget() {
   const { device } = useUser();
   const online = isOnline(device?.last_seen);

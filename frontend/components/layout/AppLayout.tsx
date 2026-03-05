@@ -26,7 +26,7 @@ function TopBar({ onOpenSettings }: { onOpenSettings: () => void }) {
       }}
     >
       {/* Logo */}
-      <Link href="/home" className="flex items-baseline gap-0">
+      <Link href="/dashboard" className="flex items-baseline gap-0">
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: "#fff", letterSpacing: -1 }}>p</span>
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 16, color: "rgba(255,255,255,0.2)" }}>-</span>
         <span style={{

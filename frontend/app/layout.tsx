@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
-import "../styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { UserProvider } from "@/providers/UserProvider";
-import { Syne, Space_Mono } from "next/font/google";
+import { Syne } from "next/font/google";
+import "../styles/globals.css";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -21,7 +21,6 @@ const syne = Syne({
 
 const instrument = Instrument_Sans({
   subsets: ["latin"],
-  // Instrument Sans supports variable weights 400-700
   weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-body",

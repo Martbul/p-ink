@@ -73,27 +73,100 @@ const BACKGROUNDS = [
   { id: "lava", label: "Lava" },
 ];
 
-const OUTFITS = [
-  { id: "none", label: "Bare", emoji: "✨" },
-  { id: "hoodie", label: "Hoodie", emoji: "🧥" },
-  { id: "suit", label: "Suit", emoji: "👔" },
-  { id: "tshirt", label: "Tee", emoji: "👕" },
-  { id: "kimono", label: "Kimono", emoji: "🥻" },
-  { id: "armor", label: "Armor", emoji: "🛡️" },
-  { id: "labcoat", label: "Lab", emoji: "🥼" },
-  { id: "spacesuit", label: "Space", emoji: "🚀" },
+// const OUTFITS = [
+//   { id: "none", label: "Bare", emoji: "✨" },
+//   { id: "hoodie", label: "Hoodie", emoji: "🧥" },
+//   { id: "suit", label: "Suit", emoji: "👔" },
+//   { id: "tshirt", label: "Tee", emoji: "👕" },
+//   { id: "kimono", label: "Kimono", emoji: "🥻" },
+//   { id: "armor", label: "Armor", emoji: "🛡️" },
+//   { id: "labcoat", label: "Lab", emoji: "🥼" },
+//   { id: "spacesuit", label: "Space", emoji: "🚀" },
+// ];
+
+// const ACCESSORIES = [
+//   { id: "none", label: "None", emoji: "—" },
+//   { id: "crown", label: "Crown", emoji: "👑" },
+//   { id: "glasses", label: "Glasses", emoji: "👓" },
+//   { id: "shades", label: "Shades", emoji: "🕶️" },
+//   { id: "tophat", label: "Top Hat", emoji: "🎩" },
+//   { id: "bow", label: "Bow", emoji: "🎀" },
+//   { id: "headphones", label: "Phones", emoji: "🎧" },
+//   { id: "halo", label: "Halo", emoji: "😇" },
+
+
+// ];
+
+const OUTFITS =[
+  { 
+    id: "none", label: "Bare", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M12 4l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" /></svg> 
+  },
+  { 
+    id: "hoodie", label: "Hoodie", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M4 10V20h16V10 M4 10l8-6 8 6 M12 4v6 M8 20v-4 M16 20v-4" /></svg> 
+  },
+  { 
+    id: "suit", label: "Suit", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M5 8v12h14V8 M12 3l-3 5h6z M12 8v12 M9 15h6" /></svg> 
+  },
+  { 
+    id: "tshirt", label: "Tee", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M5 5l-3 4h3v11h14V9h3l-3-4H5z M10 5v2h4V5" /></svg> 
+  },
+  { 
+    id: "kimono", label: "Kimono", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M4 6h16v16H4z M12 6L4 22 M12 6l8 16 M8 12h8" /></svg> 
+  },
+  { 
+    id: "armor", label: "Armor", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M4 4h16v8c0 6-8 10-8 10S4 18 4 12V4z M4 10h16 M12 4v18 M8 15h8" /></svg> 
+  },
+  { 
+    id: "labcoat", label: "Lab", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M6 4v18h12V4 M9 4v4 M15 4v4 M12 8v14 M8 14h2 M14 14h2" /></svg> 
+  },
+  { 
+    id: "spacesuit", label: "Space", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M6 10v12h4v-4h4v4h4V10 M12 2A4 4 0 0 0 8 6v4h8V6a4 4 0 0 0-4-4z M9 14h6" /></svg> 
+  },
 ];
 
-const ACCESSORIES = [
-  { id: "none", label: "None", emoji: "—" },
-  { id: "crown", label: "Crown", emoji: "👑" },
-  { id: "glasses", label: "Glasses", emoji: "👓" },
-  { id: "shades", label: "Shades", emoji: "🕶️" },
-  { id: "tophat", label: "Top Hat", emoji: "🎩" },
-  { id: "bow", label: "Bow", emoji: "🎀" },
-  { id: "headphones", label: "Phones", emoji: "🎧" },
-  { id: "halo", label: "Halo", emoji: "😇" },
+const ACCESSORIES =[
+  { 
+    id: "none", label: "None", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><line x1="4" y1="12" x2="20" y2="12" /></svg> 
+  },
+  { 
+    id: "crown", label: "Crown", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M2 20h20 M4 20L2 8l5 4 5-8 5 4 5-4-2 12" /></svg> 
+  },
+  { 
+    id: "glasses", label: "Glasses", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><rect x="2" y="10" width="8" height="6" /><rect x="14" y="10" width="8" height="6" /><line x1="10" y1="13" x2="14" y2="13" /></svg> 
+  },
+  { 
+    id: "shades", label: "Shades", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M2 10h8v6H2z M14 10h8v6h-8z M10 12h4 M2 10l2-2 M22 10l-2-2" /><path d="M2 10h8v6 M14 10h8v6" fill="currentColor" opacity="0.5" /></svg> 
+  },
+  { 
+    id: "tophat", label: "Top Hat", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M2 18h20 M6 18V4h12v14 M6 14h12" /></svg> 
+  },
+  { 
+    id: "bow", label: "Bow", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M12 12l8-6v12z M12 12L4 6v12z M10 10h4v4h-4z" /></svg> 
+  },
+  { 
+    id: "headphones", label: "Phones", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><path d="M4 14A8 8 0 0 1 20 14 M2 14h4v6H2z M18 14h4v6h-4z" /></svg> 
+  },
+  { 
+    id: "halo", label: "Halo", 
+    icon: <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square"><ellipse cx="12" cy="6" rx="8" ry="3" /><line x1="12" y1="9" x2="12" y2="12" /></svg> 
+  },
 ];
+
 const ANIMATIONS =[
   {
     id: "idle",
@@ -679,7 +752,25 @@ function Card({
 //   );
 // }
 
+const ACC_STYLES: Record<string, React.CSSProperties> = {
+  crown: { top: "-25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.4em", zIndex: 20 },
+  glasses: { top: "25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.2em", zIndex: 20 },
+  shades: { top: "25%", left: "50%", transform: "translateX(-50%)", fontSize: "1.2em", zIndex: 20 },
+  tophat: { top: "-35%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 20 },
+  bow: { top: "-10%", left: "75%", transform: "translateX(-50%) rotate(15deg)", fontSize: "1em", zIndex: 20 },
+  headphones: { top: "15%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 20 },
+  halo: { top: "-40%", left: "50%", transform: "translateX(-50%)", fontSize: "1.3em", zIndex: 20 },
+};
 
+const OUTFIT_STYLES: Record<string, React.CSSProperties> = {
+  hoodie: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  suit: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  tshirt: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  kimono: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  armor: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  labcoat: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.5em", zIndex: 15 },
+  spacesuit: { bottom: "-10%", left: "50%", transform: "translateX(-50%)", fontSize: "1.6em", zIndex: 15 },
+};
 function FramePreview({ cfg }: { cfg: any }) {
   const charReg = CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
   const anim = ANIMATIONS.find((a) => a.id === cfg.animation) ?? ANIMATIONS[0];
@@ -728,6 +819,7 @@ function FramePreview({ cfg }: { cfg: any }) {
         <div key={i} style={{ position: "absolute", ...p, width: 14, height: 14, zIndex: 3, ...b }} />
       ))}
 
+      {/* Layered Character UI */}
       <div
         style={{
           position: "absolute",
@@ -735,26 +827,36 @@ function FramePreview({ cfg }: { cfg: any }) {
           left: pos.left,
           transform: "translate(-50%,-50%)",
           zIndex: 4,
-          textAlign: "center",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
           animation: anim.css,
         }}
       >
-        {acc && acc.id !== "none" && (
-          <div style={{ fontSize: "clamp(0.8rem,1.5vw,1.4rem)", lineHeight: 1, marginBottom: "-0.2rem" }}>
-            {acc.emoji}
+        <div className="relative inline-flex items-center justify-center" style={{ fontSize: "2.5rem", color: C.cyan }}>
+            
+          <div style={{ filter: `drop-shadow(0 0 8px ${charReg.color}80)`, position: "relative", zIndex: 10 }}>
+            <AnimatedSprite frames={frames} palette={charReg.palette} scale={5} fps={3} />
           </div>
-        )}
-        <div style={{ filter: `drop-shadow(0 0 8px ${charReg.color}80)` }}>
-          <AnimatedSprite frames={frames} palette={charReg.palette} scale={5} fps={3} />
+
+          {outfit && outfit.id !== "none" && (
+            <div 
+              className="absolute drop-shadow-md flex items-center justify-center" 
+              style={{ ...OUTFIT_STYLES[outfit.id], pointerEvents: "none" }}
+            >
+              {outfit.icon}
+            </div>
+          )}
+
+          {acc && acc.id !== "none" && (
+            <div 
+              className="absolute drop-shadow-md flex items-center justify-center" 
+              style={{ ...ACC_STYLES[acc.id], pointerEvents: "none" }}
+            >
+              {acc.icon}
+            </div>
+          )}
         </div>
-        {outfit && outfit.id !== "none" && (
-          <div style={{ fontSize: "clamp(0.6rem,1.2vw,1.1rem)", lineHeight: 1, marginTop: "-0.1rem" }}>
-            {outfit.emoji}
-          </div>
-        )}
       </div>
 
       {/* HUD */}
@@ -1525,7 +1627,7 @@ export default function TamagotchiPage() {
                               : "none",
                           }}
                         >
-                          {item.emoji}
+                          {item.icon}
                         </span>
                         <span style={{ fontSize: "0.65rem" }}>
                           {item.label}
