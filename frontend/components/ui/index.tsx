@@ -1,4 +1,5 @@
 "use client";
+
 import {
   forwardRef,
   InputHTMLAttributes,
@@ -7,7 +8,6 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
-// ─── BUTTON ──────────────────────────────────────────────────────────────────
 type BtnVariant = "primary" | "ghost" | "dark" | "danger";
 type BtnSize = "sm" | "md" | "lg";
 
@@ -63,7 +63,6 @@ export function Button({
   );
 }
 
-// ─── INPUT ────────────────────────────────────────────────────────────────────
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;

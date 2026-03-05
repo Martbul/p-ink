@@ -432,7 +432,6 @@ export function useModal() {
   return { open, close, Modal };
 }
 
-// ─── Preset factories ─────────────────────────────────────────────────────────
 export const ModalPresets = {
   pairSuccess: (mac: string): ModalConfig => ({
     variant: "success",
