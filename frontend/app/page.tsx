@@ -262,7 +262,6 @@ export default function LandingPage() {
         style={{ zIndex: 0, opacity: 0.6 }}
       />
 
-      {/* Scanlines */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -272,7 +271,6 @@ export default function LandingPage() {
         }}
       />
 
-      {/* BG glow */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -283,7 +281,6 @@ export default function LandingPage() {
       />
 
       <div className="relative" style={{ zIndex: 2 }}>
-        {/* NAV */}
         <nav
           className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between"
           style={{
@@ -346,7 +343,6 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        {/* HERO */}
         <section className="pt-40 pb-28 px-6 flex flex-col items-center text-center">
           <div
             className="mb-8 px-4 py-2 border border-cyan-400/20 flex items-center gap-3"
@@ -431,7 +427,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* DEVICE PREVIEW */}
         <section className="py-16 px-6 flex justify-center">
           <div className="relative max-w-sm w-full">
             <div
@@ -451,7 +446,6 @@ export default function LandingPage() {
                   "0 0 40px rgba(5,217,232,0.08), 0 0 80px rgba(177,34,229,0.08), inset 0 0 30px rgba(0,0,0,0.5)",
               }}
             >
-              {/* Corner marks */}
               {(
                 [
                   "top-0 left-0",
@@ -515,7 +509,6 @@ export default function LandingPage() {
                     ),
                   )}
                 </div>
-                {/* Animated scan line */}
                 <div
                   className="absolute left-0 right-0 h-px opacity-40"
                   style={{
@@ -537,7 +530,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FEATURES */}
         <section className="py-24 px-6 max-w-5xl mx-auto">
           <div className="flex items-center gap-4 mb-12">
             <div className="h-px flex-1 bg-white/10" />
@@ -673,7 +665,6 @@ export default function LandingPage() {
           ))}
         </section>
 
-        {/* BOTTOM CTA */}
         <section className="py-32 px-6 flex flex-col items-center text-center">
           <div
             className="relative max-w-2xl w-full p-12 border border-white/10"
@@ -732,7 +723,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FOOTER */}
         <footer className="py-8 px-6 border-t border-white/[0.06]">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">

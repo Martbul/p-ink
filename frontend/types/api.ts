@@ -1,6 +1,3 @@
-// ─── Mirrors internal/models/models.go exactly ────────────────────────────────
-// Keep in sync with the Go structs. All dates are ISO 8601 strings from JSON.
-
 export interface User {
   id: string;
   clerk_id: string;
@@ -75,8 +72,6 @@ export interface PushSubscription {
   created_at: string;
 }
 
-// ─── API response shapes ───────────────────────────────────────────────────────
-
 export interface MeResponse {
   user: User;
   couple: Couple | null;
@@ -94,10 +89,6 @@ export interface DeviceResponse {
   frame_state: FrameState | null;
 }
 
-/**
- * GET /api/devices/couple — returns both devices in the couple (0–2).
- * Each entry includes the device and its current frame state.
- */
 export interface DeviceWithState {
   device: Device;
   frame_state: FrameState | null;

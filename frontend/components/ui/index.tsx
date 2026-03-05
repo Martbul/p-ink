@@ -102,7 +102,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = "Input";
 
-// ─── TEXTAREA ────────────────────────────────────────────────────────────────
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
@@ -135,7 +134,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = "Textarea";
 
-// ─── SELECT ──────────────────────────────────────────────────────────────────
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   options: { value: string; label: string }[];
@@ -167,7 +165,6 @@ export function Select({
   );
 }
 
-// ─── CARD ─────────────────────────────────────────────────────────────────────
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -195,7 +192,6 @@ export function Card({
   );
 }
 
-// ─── BADGE ────────────────────────────────────────────────────────────────────
 type BadgeVariant = "online" | "offline" | "terra" | "gold" | "success";
 
 export function Badge({
@@ -217,7 +213,6 @@ export function Badge({
   );
 }
 
-// ─── TOGGLE ───────────────────────────────────────────────────────────────────
 export function Toggle({
   checked,
   onChange,
@@ -237,7 +232,6 @@ export function Toggle({
   );
 }
 
-// ─── DIVIDER ──────────────────────────────────────────────────────────────────
 export function Divider({
   label,
   className,
@@ -257,7 +251,6 @@ export function Divider({
   );
 }
 
-// ─── LOADING SPINNER ──────────────────────────────────────────────────────────
 export function Spinner({ className }: { className?: string }) {
   return (
     <span
@@ -269,7 +262,6 @@ export function Spinner({ className }: { className?: string }) {
   );
 }
 
-// ─── STEP DOTS ────────────────────────────────────────────────────────────────
 export function StepDots({
   total,
   current,

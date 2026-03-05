@@ -77,9 +77,7 @@ func PairDevice(pool *pgxpool.Pool) http.HandlerFunc {
 	}
 }
 
-// GetMyDevice  GET /api/devices/me
-//
-// Returns the authenticated user's own device and its current frame state.
+
 func GetMyDevice(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())

@@ -70,7 +70,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       try {
         const t = await token();
 
-        // ── Step 1: /api/users/me ──────────────────────────────────────────
         const me = await api.getMe(t);
         setUser(me.user);
         setCouple(me.couple ?? null);
@@ -78,7 +77,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const myDevice = me.device ?? null;
         setDevice(myDevice);
 
-        // ── Step 2: own frame state ────────────────────────────────────────
         let myFrameState: FrameState | null = null;
         if (myDevice) {
           try {
@@ -90,42 +88,29 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
         setFrameState(myFrameState);
 
-        // ── Step 3: couple-level data ──────────────────────────────────────
         if (me.couple) {
-          // Partner profile — only possible when couple is active (user_b exists)
-          // For pending couples, /api/couples/me returns user_b: null — safe to handle
           if (me.couple.status === "active") {
             try {
               const coupleData = await api.getCouple(t);
-              // user_a / user_b come back directly on the response object
               const partner =
                 coupleData.user_a?.id === me.user.id
                   ? coupleData.user_b
                   : coupleData.user_a;
               setPartnerUser(partner ?? null);
             } catch {
-              // Non-fatal — e.g. race between activation and refetch
               setPartnerUser(null);
             }
           } else {
-            // Pending couple — partner hasn't joined yet
             setPartnerUser(null);
           }
 
-          // ── Step 4: couple devices ────────────────────────────────────────
-          // /api/devices/couple queries by couple_id OR by owner_id of both
-          // partners (see GetDevicesByCouple in queries.go — it already uses
-          // the UNION fallback). So this should always return correctly.
           let rawList: DeviceWithState[] = [];
           try {
             const devData = await api.getCoupleDevices(t);
             rawList = devData.devices ?? [];
           } catch {
-            // Non-fatal — might 404 if couple is pending and no devices yet
           }
 
-          // Ensure the current user's own device is always in the list,
-          // even if couple_id wasn't set yet on the device row.
           const myDeviceInList = myDevice
             ? rawList.some((d) => d.device.id === myDevice.id)
             : false;
@@ -136,14 +121,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               : rawList,
           );
         } else {
-          // No couple at all (potential joiner)
           setPartnerUser(null);
           setCoupleDevices(
             myDevice ? [{ device: myDevice, frame_state: myFrameState }] : [],
           );
         }
 
-        // ── Step 5: content (active couples only) ─────────────────────────
         if (me.couple?.status === "active") {
           try {
             const contentData = await api.listContent(t);

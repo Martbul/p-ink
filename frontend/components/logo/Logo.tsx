@@ -1,7 +1,3 @@
-// components/logo/Logo.tsx
-// Full lockup — icon mark above wordmark + tagline
-// Usage: <Logo /> or <Logo showTagline={false} />
-
 interface LogoProps {
   showTagline?: boolean;
   markSize?: number;
@@ -14,7 +10,6 @@ export function Logo({ showTagline = true, markSize = 80, className }: LogoProps
       className={`flex flex-col items-center gap-4 ${className ?? ""}`}
       style={{ fontFamily: "inherit" }}
     >
-      {/* Icon mark */}
       <svg
         width={markSize}
         height={markSize}

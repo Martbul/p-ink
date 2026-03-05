@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
+import { CLOTHING_PALETTE, mergeOverlays } from "./sprites";
 
 type Palette = Record<number, string>;
 type Frame = number[][];
@@ -10,7 +10,6 @@ interface BgDef {
   palette: Record<string, string>;
   pixels: string[][];
 }
-
 
 interface PixelSpriteProps {
   pixels: Frame;
@@ -46,16 +45,25 @@ function PixelSprite({ pixels, palette, scale = 4, style = {} }: PixelSpriteProp
   return <canvas ref={canvasRef} style={{ imageRendering: "pixelated", ...style }} />;
 }
 
-
 interface AnimatedSpriteProps {
   frames: Frame[];
   palette: Palette;
   scale?: number;
   fps?: number;
   style?: React.CSSProperties;
+  outfit?: string;
+  accessory?: string;
 }
 
-export function AnimatedSprite({ frames, palette, scale = 4, fps = 4, style = {} }: AnimatedSpriteProps) {
+export function AnimatedSprite({
+  frames,
+  palette,
+  scale = 4,
+  fps = 4,
+  style = {},
+  outfit = "none",
+  accessory = "none",
+}: AnimatedSpriteProps) {
   const [frame, setFrame] = useState(0);
 
   useEffect(() => {
@@ -66,8 +74,18 @@ export function AnimatedSprite({ frames, palette, scale = 4, fps = 4, style = {}
     return () => clearInterval(interval);
   }, [frames.length, fps]);
 
-  const currentFrame = frames[frame] ?? frames[0];
-  return <PixelSprite pixels={currentFrame} palette={palette} scale={scale} style={style} />;
+  const baseFrame = frames[frame] ?? frames[0];
+
+  // Merge overlays into the pixel grid
+  const mergedFrame =
+    (outfit !== "none" || accessory !== "none")
+      ? mergeOverlays(baseFrame, outfit, accessory)
+      : baseFrame;
+
+  // Merge character palette with shared clothing palette
+  const mergedPalette: Palette = { ...CLOTHING_PALETTE, ...palette };
+
+  return <PixelSprite pixels={mergedFrame} palette={mergedPalette} scale={scale} style={style} />;
 }
 
 const makeBg = (palette: Record<string, string>, grid: string[]) => ({
@@ -168,7 +186,6 @@ pixel_park: makeBg({
     "BBBBBBBBBBCCCCCDDDDDDDDDCCCCBBBBBBBBBBBB",
     "BBBBBBBBBCCCCCDDDDDDDDDDDCCCCBBBBBBBBBBB"
   ]),
-
 
  space: makeBg({
     "0": "#020108", "1": "#090514", "2": "#140a24", "3": "#ffffff", "4": "#b5c8ff", 
@@ -418,7 +435,6 @@ pixel_park: makeBg({
     "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
   ]),
 
-  // ── VOID — minimalist dark void ───────────────────────────────
   void: {
     palette: {
       "0":"#000000","1":"#080808","2":"#111111","3":"#181818","4":"#b122e5",
@@ -434,7 +450,6 @@ pixel_park: makeBg({
     ),
   },
 };
-
 
 interface PixelBgProps {
   type: string;

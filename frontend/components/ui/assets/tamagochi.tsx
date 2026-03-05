@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 
-// ═══════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════
 
 type Palette = Record<number, string>;
 type Frame = number[][];
@@ -31,10 +28,6 @@ interface SpriteData {
   palette: Palette;
   pixels: Frame;
 }
-
-// ═══════════════════════════════════════════════════════════════
-// PIXEL ART ENGINE
-// ═══════════════════════════════════════════════════════════════
 
 const SCALE = 4;
 
@@ -72,9 +65,6 @@ function PixelSprite({ pixels, palette, scale = SCALE, style = {} }: PixelSprite
   return <canvas ref={canvasRef} style={{ imageRendering: "pixelated", ...style }} />;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CHARACTER DEFINITIONS
-// ═══════════════════════════════════════════════════════════════
 
 const SPECTER_PALETTE: Palette = {
   1: "#b5c8ff", 2: "#8aa4f0", 3: "#6680d4", 4: "#ffffff", 5: "#2a2870",
@@ -123,7 +113,6 @@ const SPECTER_WALK_2: Frame = [
   [0,0,3,2,1,2,1,2,1,3],[0,0,0,0,3,3,0,3,3,0],
 ];
 
-// ── BLOBBY ────────────────────────────────────────────────────
 const BLOBBY_PALETTE: Palette = {
   1: "#7effa0", 2: "#4cd472", 3: "#2a9e4f", 4: "#ffffff", 5: "#1a3a1a",
   6: "#ff9de2", 7: "#b8ffe0", 8: "#1a7a38", 9: "#fff48a", 10: "#ff6b6b",
@@ -191,7 +180,6 @@ const SPARKY_BLINK: Frame = [
   [0,3,3,3,3,3,3,3,3,0],[0,0,3,1,0,0,1,3,0,0],
 ];
 
-// ── FLUFFY ────────────────────────────────────────────────────
 const FLUFFY_PALETTE: Palette = {
   1: "#fff5e0", 2: "#f0d8b0", 3: "#a08060", 4: "#ffffff", 5: "#2a1a0a",
   6: "#ff9de2", 7: "#fff8f0", 8: "#c8a878", 9: "#ffcc88", 10: "#ff7aa8",
@@ -347,9 +335,6 @@ const PANDA_SLEEP: Frame = [
   [0,3,1,1,8,8,1,1,3,0],[0,0,3,1,1,1,1,3,0,0],
 ];
 
-// ═══════════════════════════════════════════════════════════════
-// PIXEL BACKGROUNDS
-// ═══════════════════════════════════════════════════════════════
 
 interface PixelBackgroundProps {
   type: string;
@@ -465,9 +450,6 @@ function PixelBackground({ type, scale = 3 }: PixelBackgroundProps) {
   return <canvas ref={canvasRef} style={{ imageRendering: "pixelated", display: "block" }} />;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ANIMATED SPRITE COMPONENT
-// ═══════════════════════════════════════════════════════════════
 
 interface AnimatedSpriteProps {
   frames: Frame[];
@@ -490,9 +472,6 @@ function AnimatedSprite({ frames, palette, scale = SCALE, fps = 4, style = {} }:
   return <PixelSprite pixels={frames[frame]} palette={palette} scale={scale} style={style} />;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PARTICLE EFFECTS
-// ═══════════════════════════════════════════════════════════════
 
 const HEART_SPRITE: SpriteData = {
   palette: { 1: "#ff2a6d", 2: "#ff8ab0", 3: "#cc1050" },
@@ -532,9 +511,6 @@ function FloatingParticle({ sprite, delay = 0, left = "50%", scale = 2 }: Floati
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CHARACTER REGISTRY
-// ═══════════════════════════════════════════════════════════════
 
 const CHARACTERS: Record<CharKey, CharDef & { color: string }> = {
   specter: {
@@ -628,9 +604,6 @@ const ALL_CHARACTERS: Record<AllCharKey, CharDef & { color: string; name: string
   ...EXTRA_CHARACTERS,
 };
 
-// ═══════════════════════════════════════════════════════════════
-// TAMAGOTCHI SCENE COMPONENT
-// ═══════════════════════════════════════════════════════════════
 
 interface TamagotchiSceneProps {
   character: AllCharKey;
@@ -676,9 +649,6 @@ function TamagotchiScene({ character, background, mood, animate = true }: Tamago
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATUS BAR
-// ═══════════════════════════════════════════════════════════════
 
 interface PixelStatBarProps {
   label: string;
@@ -709,9 +679,6 @@ function PixelStatBar({ label, value, color, maxWidth = 80 }: PixelStatBarProps)
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ACTION BUTTON
-// ═══════════════════════════════════════════════════════════════
 
 interface PixelButtonProps {
   label: string;
@@ -925,7 +892,6 @@ export default function TamagotchiAssets() {
             </div>
           </div>
 
-          {/* Particle effects preview */}
           <div style={{ padding: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", clipPath: "polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)" }}>
             <div style={{ fontSize: 8, letterSpacing: "0.3em", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 12 }}>▸ particle sprites</div>
             <div style={{ display: "flex", gap: 20, alignItems: "center", justifyContent: "space-around" }}>

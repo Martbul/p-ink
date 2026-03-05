@@ -1,7 +1,3 @@
-// components/logo/LogoMono.tsx
-// Monochrome white version — for light backgrounds, print, embossing, etc.
-// Usage: <LogoMono size={48} color="#000000" />
-
 interface LogoMonoProps {
   size?: number;
   color?: string;   // default white — pass "#000" for black version
