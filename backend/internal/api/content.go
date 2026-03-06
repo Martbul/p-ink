@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martbul/p-ink/internal/db"
+	"github.com/martbul/p-ink/internal/errs"
 	"github.com/martbul/p-ink/internal/middleware"
 	"github.com/martbul/p-ink/internal/models"
 	"github.com/martbul/p-ink/internal/storage"
@@ -15,18 +16,23 @@ import (
 
 // ListContent  GET /api/content
 func ListContent(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.ListContent")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if err != nil || couple == nil {
-			Error(w, http.StatusBadRequest, "not in a couple")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil {
+			NotFound(w, "not in a couple")
 			return
 		}
 
 		items, err := db.ListContent(r.Context(), pool, couple.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to list content"))
 			return
 		}
 		OK(w, map[string]any{"items": items})
@@ -34,29 +40,25 @@ func ListContent(pool *pgxpool.Pool) http.HandlerFunc {
 }
 
 // UploadContent  POST /api/content
-// Accepts multipart/form-data:
-//   - type:         "photo" | "message" | "drawing"
-//   - file:         binary  (photo / drawing only)
-//   - message_text: string  (message only)
-//   - caption:      string  (optional, any type)
-//
-// After the raw file is stored, plug your image pipeline into the
-// clearly marked hook below to generate the composed BMP.
 func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
+	const op = errs.Op("api.UploadContent")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if err != nil || couple == nil || couple.Status != models.CoupleStatusActive {
-			Error(w, http.StatusBadRequest, "not in an active couple")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil || couple.Status != models.CoupleStatusActive {
+			BadRequest(w, "not in an active couple")
 			return
 		}
 
-		// Resolve the recipient (always the partner)
 		var sentTo uuid.UUID
 		if couple.UserAID == user.ID {
 			if couple.UserBID == nil {
-				Error(w, http.StatusBadRequest, "partner has not joined yet")
+				BadRequest(w, "partner has not joined yet")
 				return
 			}
 			sentTo = *couple.UserBID
@@ -69,7 +71,7 @@ func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
 		messageText := r.FormValue("message_text")
 
 		if contentType == "" {
-			Error(w, http.StatusBadRequest, "type is required (photo|message|drawing)")
+			BadRequest(w, "type is required (photo|message|drawing)")
 			return
 		}
 
@@ -87,19 +89,19 @@ func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
 
 		case models.ContentTypeMessage:
 			if messageText == "" {
-				Error(w, http.StatusBadRequest, "message_text required for type=message")
+				BadRequest(w, "message_text required for type=message")
 				return
 			}
 			c.MessageText = &messageText
 
 		case models.ContentTypePhoto, models.ContentTypeDrawing:
 			if err := r.ParseMultipartForm(20 << 20); err != nil {
-				Error(w, http.StatusBadRequest, "file too large (max 20 MB)")
+				BadRequest(w, "file too large (max 20 MB)")
 				return
 			}
 			file, header, err := r.FormFile("file")
 			if err != nil {
-				Error(w, http.StatusBadRequest, "file is required for type=photo|drawing")
+				BadRequest(w, "file is required for type=photo|drawing")
 				return
 			}
 			defer file.Close()
@@ -109,39 +111,26 @@ func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
 				mimeType = "application/octet-stream"
 			}
 
-			// Upload raw file to Cloudinary
 			url, key, err := store.Upload(r.Context(), file, header.Filename, mimeType, couple.ID.String())
 			if err != nil {
-				Error(w, http.StatusInternalServerError, "upload failed")
+				Error(w, errs.E(op, errs.KindInternal, err, "upload to storage failed"))
 				return
 			}
 			c.StorageKey = &key
-			_ = url // url is the Cloudinary delivery URL; key is the public_id
+			_ = url
 
-			// ── IMAGE PROCESSING HOOK ──────────────────────────────────────
-			// TODO: call your BMP composition pipeline here.
-			// Input:  c.StorageKey (Cloudinary public_id of the raw upload)
-			// Output: composed 800×480 BMP uploaded to Cloudinary, URL + SHA-256 hash
-			// Then:   call db.UpsertFrameState with the new BMP details
-			// ──────────────────────────────────────────────────────────────
-
-			// ── Feed tamagotchi ────────────────────────────────────────────
-			// Photo/drawing uploads feed the partner's Tamagotchi.
-			// The sender (user) is the controller — their action feeds the
-			// Tamagotchi owned by the recipient (partner).
 			if feedResult, feedErr := db.Feed(r.Context(), pool, user.ID, c.Type); feedErr == nil && feedResult.LeveledUp {
-				// TODO: send push notification to owner about level up
 				_ = feedResult
 			}
 
 		default:
-			Error(w, http.StatusBadRequest, "type must be photo, message, or drawing")
+			BadRequest(w, "type must be photo, message, or drawing")
 			return
 		}
 
 		created, err := db.CreateContent(r.Context(), pool, c)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to save content"))
 			return
 		}
 		Created(w, created)
@@ -149,8 +138,8 @@ func UploadContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
 }
 
 // SendMessage  POST /api/content/message
-// JSON-only convenience endpoint (no file upload required).
 func SendMessage(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.SendMessage")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
@@ -159,13 +148,17 @@ func SendMessage(pool *pgxpool.Pool) http.HandlerFunc {
 			Caption *string `json:"caption,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Text == "" {
-			Error(w, http.StatusBadRequest, "text is required")
+			BadRequest(w, "text is required")
 			return
 		}
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if err != nil || couple == nil || couple.Status != models.CoupleStatusActive {
-			Error(w, http.StatusBadRequest, "not in an active couple")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil || couple.Status != models.CoupleStatusActive {
+			BadRequest(w, "not in an active couple")
 			return
 		}
 
@@ -186,7 +179,7 @@ func SendMessage(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		created, err := db.CreateContent(r.Context(), pool, c)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to save message"))
 			return
 		}
 		Created(w, created)
@@ -194,24 +187,19 @@ func SendMessage(pool *pgxpool.Pool) http.HandlerFunc {
 }
 
 // DeleteContent  DELETE /api/content/{id}
-// Only the sender can delete, and only while status=queued.
 func DeleteContent(pool *pgxpool.Pool, store storage.Store) http.HandlerFunc {
+	const op = errs.Op("api.DeleteContent")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		id, err := uuid.Parse(mux.Vars(r)["id"])
 		if err != nil {
-			Error(w, http.StatusBadRequest, "invalid id")
+			BadRequest(w, "invalid content id")
 			return
 		}
 
-		// Fetch first so we can clean up the Cloudinary asset
-		items, err := db.ListContent(r.Context(), pool, uuid.Nil) // reuse list with filter — or add GetContentByID
-		_ = items
-		_ = err
-
 		if err := db.DeleteContent(r.Context(), pool, id, user.ID); err != nil {
-			Error(w, http.StatusNotFound, "not found or cannot be deleted")
+			Error(w, errs.E(op, errs.KindNotFound, err, "not found or cannot be deleted"))
 			return
 		}
 		NoContent(w)

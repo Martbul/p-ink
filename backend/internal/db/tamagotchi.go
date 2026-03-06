@@ -69,6 +69,7 @@ func CreateTamagotchisForCouple(
 func GetTamagotchiByOwner(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID) (*models.Tamagotchi, error) {
 	row := pool.QueryRow(ctx, `
 		SELECT id, couple_id, owner_id, controller_id, name, species,
+		       background, animation, position,
 		       health, max_health, xp, level, mood, last_fed_at, created_at
 		FROM tamagotchis WHERE owner_id = $1
 	`, ownerID)
@@ -80,6 +81,7 @@ func GetTamagotchiByOwner(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.
 func GetTamagotchiByController(ctx context.Context, pool *pgxpool.Pool, controllerID uuid.UUID) (*models.Tamagotchi, error) {
 	row := pool.QueryRow(ctx, `
 		SELECT id, couple_id, owner_id, controller_id, name, species,
+		       background, animation, position,
 		       health, max_health, xp, level, mood, last_fed_at, created_at
 		FROM tamagotchis WHERE controller_id = $1
 	`, controllerID)
@@ -90,6 +92,7 @@ func GetTamagotchiByController(ctx context.Context, pool *pgxpool.Pool, controll
 func GetTamagotchiByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*models.Tamagotchi, error) {
 	row := pool.QueryRow(ctx, `
 		SELECT id, couple_id, owner_id, controller_id, name, species,
+		       background, animation, position,
 		       health, max_health, xp, level, mood, last_fed_at, created_at
 		FROM tamagotchis WHERE id = $1
 	`, id)
@@ -100,6 +103,7 @@ func GetTamagotchiByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*
 func GetAllTamagotchis(ctx context.Context, pool *pgxpool.Pool) ([]*models.Tamagotchi, error) {
 	rows, err := pool.Query(ctx, `
 		SELECT id, couple_id, owner_id, controller_id, name, species,
+		       background, animation, position,
 		       health, max_health, xp, level, mood, last_fed_at, created_at
 		FROM tamagotchis
 	`)
@@ -228,11 +232,11 @@ func ApplyDecay(ctx context.Context, pool *pgxpool.Pool) error {
 	defer rows.Close()
 
 	type decayTarget struct {
-		id          uuid.UUID
-		health      int
-		maxHealth   int
-		mood        models.TamagotchiMood
-		lastFedAt   *time.Time
+		id        uuid.UUID
+		health    int
+		maxHealth int
+		mood      models.TamagotchiMood
+		lastFedAt *time.Time
 	}
 
 	var targets []decayTarget
@@ -601,13 +605,12 @@ func moodFromHealth(health, maxHealth int) models.TamagotchiMood {
 	}
 }
 
-
 func scanTamagotchi(row pgx.Row) (*models.Tamagotchi, error) {
 	var t models.Tamagotchi
 	err := row.Scan(
 		&t.ID, &t.CoupleID, &t.OwnerID, &t.ControllerID,
 		&t.Name, &t.Species,
-		&t.Background, &t.Animation, &t.Position, // ← new
+		&t.Background, &t.Animation, &t.Position,
 		&t.Health, &t.MaxHealth,
 		&t.XP, &t.Level, &t.Mood, &t.LastFedAt, &t.CreatedAt,
 	)
@@ -619,7 +622,6 @@ func scanTamagotchi(row pgx.Row) (*models.Tamagotchi, error) {
 	}
 	return &t, nil
 }
-
 
 func scanItems(rows pgx.Rows) ([]*models.TamagotchiItem, error) {
 	var out []*models.TamagotchiItem
@@ -651,8 +653,6 @@ func max(a, b int) int {
 	return b
 }
 
-
-
 type TamagotchiUpdate struct {
 	ID        uuid.UUID
 	XP        int
@@ -676,7 +676,6 @@ func UpdateTamagotchiState(ctx context.Context, pool *pgxpool.Pool, u Tamagotchi
 	`, u.XP, u.Health, u.MaxHealth, u.Level, string(u.Mood), u.LastFedAt, u.ID)
 	return err
 }
-
 
 func GetShopItem(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (*models.TamagotchiItem, error) {
 	row := pool.QueryRow(ctx, `

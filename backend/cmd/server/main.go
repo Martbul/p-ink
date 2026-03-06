@@ -128,7 +128,7 @@ func main() {
 			"http://localhost:3000",
 			"https://p-ink.strct.org",
 		}),
-		gorilllaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		gorilllaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}),
 		gorilllaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Pprof-Secret"}),
 		gorilllaHandlers.ExposedHeaders([]string{"Content-Length"}),
 		gorilllaHandlers.AllowCredentials(),

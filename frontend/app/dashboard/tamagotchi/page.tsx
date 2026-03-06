@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTamagotchi } from "@/providers/TamagotchiProvider";
 
-
 const C = {
   cyan: "#05d9e8",
   purple: "#b122e5",
@@ -24,7 +23,6 @@ const clip = {
   md: "polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0% 100%,0% 10px)",
   sm: "polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px)",
 };
-
 
 const SPECIES = [
   {
@@ -185,44 +183,6 @@ const POS_CSS: Record<string, { top: string; left: string }> = {
   "bottom-right": { top: "74%", left: "78%" },
 };
 
-const ALL_SCREENS = [
-  {
-    id: "tamagotchi",
-    label: "Tamagotchi",
-    emoji: "🐾",
-    locked: true,
-    desc: "Your pet companion",
-  },
-  {
-    id: "photo-replay",
-    label: "Photo Replay",
-    emoji: "📸",
-    locked: false,
-    desc: "Latest partner photo",
-  },
-  {
-    id: "photo-slideshow",
-    label: "Slideshow",
-    emoji: "🎞️",
-    locked: false,
-    desc: "All photos rotating",
-  },
-  {
-    id: "custom-screen",
-    label: "Custom Screen",
-    emoji: "🖼️",
-    locked: false,
-    desc: "Your designed canvas",
-  },
-  {
-    id: "message-feed",
-    label: "Messages",
-    emoji: "💬",
-    locked: false,
-    desc: "Recent message thread",
-  },
-];
-
 const SECTION_TABS = [
   { id: "species", label: "Species" },
   { id: "background", label: "Background" },
@@ -230,9 +190,17 @@ const SECTION_TABS = [
   { id: "accessory", label: "Accessory" },
   { id: "animation", label: "Animation" },
   { id: "position", label: "Position" },
-  { id: "screens", label: "Screens" },
 ];
 
+const SECTION_TABS_SHORT = [
+  "Species",
+  "BG",
+  "Outfit",
+  "Acc",
+  "Anim",
+  "Pos",
+  "Screens",
+];
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -316,7 +284,6 @@ function Card({
   );
 }
 
-
 function FramePreview({
   cfg,
 }: {
@@ -331,7 +298,7 @@ function FramePreview({
   const frames = charReg[anim.mood as keyof typeof charReg] ?? charReg.idle;
 
   const hp = tama ? Math.round((tama.health / tama.max_health) * 100) : 87;
-  const xpPct = tama ? Math.round(tama.xp % 200) : 64; // rough within-level XP
+  const xpPct = tama ? Math.round(tama.xp % 200) : 64;
   const level = tama?.level ?? 7;
   const mood = tama?.mood ?? "happy";
 
@@ -484,234 +451,6 @@ function FramePreview({
   );
 }
 
-// ─── Screen reorder (reads TamagotchiProvider) ────────────────────────────────
-
-function ScreenReorder() {
-  const { screens, setScreens } = useTamagotchi();
-  const [dragging, setDragging] = useState<number | null>(null);
-  const [over, setOver] = useState<number | null>(null);
-
-  const drop = (i: number) => {
-    if (dragging === null || dragging === i) {
-      setDragging(null);
-      setOver(null);
-      return;
-    }
-    const arr = [...screens];
-    const [moved] = arr.splice(dragging, 1);
-    arr.splice(i, 0, moved);
-    setScreens(arr);
-    setDragging(null);
-    setOver(null);
-  };
-
-  const toggle = (id: string) => {
-    const meta = ALL_SCREENS.find((s) => s.id === id);
-    if (meta?.locked) return;
-    if (screens.find((s) => s.id === id)) {
-      if (screens.length <= 1) return;
-      setScreens(screens.filter((s) => s.id !== id));
-    } else {
-      setScreens([...screens, { id }]);
-    }
-  };
-
-  const inactive = ALL_SCREENS.filter(
-    (s) => !screens.find((a) => a.id === s.id),
-  );
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.4rem" }}>
-      <div>
-        <Label>Active screens — drag to set swipe order</Label>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
-        >
-          {screens.map((s, i) => {
-            const meta = ALL_SCREENS.find((m) => m.id === s.id);
-            const isOver = over === i;
-            return (
-              <div
-                key={s.id}
-                draggable
-                onDragStart={() => setDragging(i)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setOver(i);
-                }}
-                onDrop={() => drop(i)}
-                onDragEnd={() => {
-                  setDragging(null);
-                  setOver(null);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.7rem",
-                  padding: "0.55rem 0.8rem",
-                  background: isOver ? `${C.cyan}12` : "#12121e",
-                  border: `1px solid ${isOver ? C.cyan : C.border}`,
-                  clipPath: clip.sm,
-                  cursor: "grab",
-                  opacity: dragging === i ? 0.3 : 1,
-                  transition: "all 0.12s",
-                }}
-              >
-                <span
-                  style={{
-                    color: C.muted,
-                    fontSize: "0.75rem",
-                    userSelect: "none",
-                  }}
-                >
-                  ⣿
-                </span>
-                <div
-                  style={{
-                    width: 22,
-                    height: 22,
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: `${i === 0 ? C.cyan : C.purple}1a`,
-                    border: `1px solid ${i === 0 ? C.cyan : C.purple}40`,
-                    clipPath: clip.sm,
-                    fontSize: "0.55rem",
-                    fontFamily: "'Courier New',monospace",
-                    color: i === 0 ? C.cyan : C.purple,
-                  }}
-                >
-                  {i === 0 ? "⌂" : i + 1}
-                </div>
-                <span style={{ fontSize: "1rem" }}>{meta?.emoji}</span>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      color: i === 0 ? C.cyan : C.text,
-                      fontWeight: i === 0 ? 600 : 400,
-                    }}
-                  >
-                    {meta?.label}
-                    {meta?.locked && (
-                      <span
-                        style={{
-                          color: C.muted,
-                          fontSize: "0.57rem",
-                          marginLeft: "0.4rem",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        [locked]
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: "0.6rem", color: C.muted }}>
-                    {meta?.desc}
-                  </div>
-                </div>
-                <Pill color={i === 0 ? C.cyan : C.muted}>
-                  {i === 0 ? "Home" : `#${i + 1}`}
-                </Pill>
-                {!meta?.locked && (
-                  <button
-                    onClick={() => toggle(s.id)}
-                    style={{
-                      background: "none",
-                      border: `1px solid ${C.pink}35`,
-                      color: C.pink,
-                      fontSize: "0.6rem",
-                      cursor: "pointer",
-                      padding: "0.15rem 0.38rem",
-                      clipPath: clip.sm,
-                      outline: "none",
-                      transition: "border-color 0.12s",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.borderColor = C.pink)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.borderColor = C.pink + "35")
-                    }
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {inactive.length > 0 && (
-        <div>
-          <Label>Add screens</Label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-            {inactive.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => toggle(s.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.45rem",
-                  padding: "0.38rem 0.65rem",
-                  background: "transparent",
-                  border: `1px dashed ${C.border}`,
-                  color: C.muted,
-                  fontSize: "0.7rem",
-                  cursor: "pointer",
-                  clipPath: clip.sm,
-                  transition: "all 0.13s",
-                  outline: "none",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = C.cyan;
-                  e.currentTarget.style.color = C.cyan;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = C.border;
-                  e.currentTarget.style.color = C.muted;
-                }}
-              >
-                <span>{s.emoji}</span>
-                <span>+ {s.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <div
-        style={{
-          padding: "0.65rem 0.9rem",
-          background: `${C.purple}0e`,
-          border: `1px solid ${C.purple}28`,
-          clipPath: clip.sm,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "0.63rem",
-            color: `${C.purple}aa`,
-            fontFamily: "'Courier New',monospace",
-            letterSpacing: "0.06em",
-          }}
-        >
-          ← swipe left / right on frame →
-        </span>
-        <Pill color={C.purple}>
-          {screens.length} screen{screens.length !== 1 ? "s" : ""}
-        </Pill>
-      </div>
-    </div>
-  );
-}
-
-// ─── Position grid ────────────────────────────────────────────────────────────
-
 function PositionGrid({
   value,
   onChange,
@@ -764,7 +503,526 @@ function PositionGrid({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function TabContent({
+  tab,
+  config,
+  set,
+}: {
+  tab: number;
+  config: ReturnType<typeof useTamagotchi>["config"];
+  set: (
+    k: keyof ReturnType<typeof useTamagotchi>["config"],
+  ) => (v: string) => void;
+}) {
+  return (
+    <>
+      {tab === 0 && (
+        <>
+          <Label>Choose your companion species</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: "0.5rem",
+            }}
+            className="rsp-species-grid"
+          >
+            {SPECIES.map((item) => {
+              const reg = item.pixelId ? CHAR_REGISTRY[item.pixelId] : null;
+              const sel = config.species === item.id;
+              const accentCol = reg?.color ?? C.muted;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (reg) set("species")(item.id);
+                  }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.75rem 0.3rem",
+                    background: sel ? `${accentCol}18` : "transparent",
+                    border: `1px solid ${sel ? accentCol : C.border}`,
+                    color: sel ? accentCol : C.muted,
+                    cursor: reg ? "pointer" : "not-allowed",
+                    clipPath: clip.sm,
+                    transition: "all 0.14s",
+                    outline: "none",
+                    opacity: reg ? 1 : 0.4,
+                    position: "relative",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (reg && !sel) {
+                      e.currentTarget.style.borderColor = accentCol + "66";
+                      e.currentTarget.style.color = C.text;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (reg && !sel) {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.muted;
+                    }
+                  }}
+                >
+                  {reg ? (
+                    <div
+                      style={{
+                        filter: sel
+                          ? `drop-shadow(0 0 8px ${accentCol}80)`
+                          : "none",
+                        transition: "filter 0.2s",
+                      }}
+                    >
+                      <AnimatedSprite
+                        frames={reg.idle}
+                        palette={reg.palette}
+                        scale={3}
+                        fps={2}
+                        outfit={config.outfit}
+                        accessory={config.accessory}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: 30,
+                        height: 33,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1.4rem",
+                      }}
+                    >
+                      ?
+                    </div>
+                  )}
+                  <span
+                    style={{
+                      fontSize: "0.65rem",
+                      fontWeight: sel ? 600 : 400,
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.52rem",
+                      color: sel ? `${accentCol}aa` : C.muted,
+                      textAlign: "center",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {item.desc}
+                  </span>
+                  {!reg && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 4,
+                        right: 4,
+                        fontSize: "0.45rem",
+                        fontFamily: "'Courier New',monospace",
+                        color: C.muted,
+                        border: `1px solid ${C.border}`,
+                        padding: "0 3px",
+                        clipPath:
+                          "polygon(2px 0,100% 0,100% calc(100% - 2px),calc(100% - 2px) 100%,0 100%,0 2px)",
+                      }}
+                    >
+                      SOON
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 1 && (
+        <>
+          <Label>Frame background environment</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: "0.5rem",
+            }}
+            className="rsp-bg-grid"
+          >
+            {BACKGROUNDS.map((item) => {
+              const sel = config.background === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => set("background")(item.id)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.5rem 0.3rem",
+                    background: sel ? `${C.cyan}12` : "transparent",
+                    border: `1px solid ${sel ? C.cyan : C.border}`,
+                    color: sel ? C.cyan : C.muted,
+                    cursor: "pointer",
+                    clipPath: clip.sm,
+                    transition: "all 0.14s",
+                    outline: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.cyan + "55";
+                      e.currentTarget.style.color = C.text;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.muted;
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      border: `1px solid ${sel ? C.cyan : C.border}`,
+                      clipPath: clip.sm,
+                      overflow: "hidden",
+                      boxShadow: sel ? `0 0 10px ${C.cyan}40` : "none",
+                      transition: "all 0.14s",
+                    }}
+                  >
+                    <PixelBg type={item.id} scale={2} />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "0.58rem",
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 2 && (
+        <>
+          <Label>Dress your companion</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: "0.4rem",
+            }}
+            className="rsp-outfit-grid"
+          >
+            {OUTFITS.map((item) => {
+              const sel = config.outfit === item.id;
+              const charReg =
+                CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => set("outfit")(item.id)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.75rem 0.4rem",
+                    background: sel ? `${C.cyan}16` : "transparent",
+                    border: `1px solid ${sel ? C.cyan : C.border}`,
+                    color: sel ? C.cyan : C.muted,
+                    cursor: "pointer",
+                    clipPath: clip.sm,
+                    transition: "all 0.14s",
+                    outline: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.cyan + "55";
+                      e.currentTarget.style.color = C.text;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.muted;
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      filter: sel ? `drop-shadow(0 0 6px ${C.cyan}55)` : "none",
+                    }}
+                  >
+                    <AnimatedSprite
+                      frames={charReg.idle}
+                      palette={charReg.palette}
+                      scale={3}
+                      fps={2}
+                      outfit={item.id}
+                      accessory={config.accessory}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "0.65rem",
+                      fontWeight: sel ? 600 : 400,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 3 && (
+        <>
+          <Label>Equip an accessory</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4,1fr)",
+              gap: "0.4rem",
+            }}
+            className="rsp-outfit-grid"
+          >
+            {ACCESSORIES.map((item) => {
+              const sel = config.accessory === item.id;
+              const charReg =
+                CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => set("accessory")(item.id)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.75rem 0.4rem",
+                    background: sel ? `${C.cyan}16` : "transparent",
+                    border: `1px solid ${sel ? C.cyan : C.border}`,
+                    color: sel ? C.cyan : C.muted,
+                    cursor: "pointer",
+                    clipPath: clip.sm,
+                    transition: "all 0.14s",
+                    outline: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.cyan + "55";
+                      e.currentTarget.style.color = C.text;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.muted;
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      filter: sel ? `drop-shadow(0 0 6px ${C.cyan}55)` : "none",
+                    }}
+                  >
+                    <AnimatedSprite
+                      frames={charReg.idle}
+                      palette={charReg.palette}
+                      scale={3}
+                      fps={2}
+                      outfit={config.outfit}
+                      accessory={item.id}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "0.65rem",
+                      fontWeight: sel ? 600 : 400,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 4 && (
+        <>
+          <Label>Idle animation style</Label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "0.45rem",
+            }}
+            className="rsp-anim-grid"
+          >
+            {ANIMATIONS.map((a) => {
+              const sel = config.animation === a.id;
+              const charReg =
+                CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
+              const frames =
+                charReg[a.mood as keyof typeof charReg] ?? charReg.idle;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => set("animation")(a.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.7rem",
+                    padding: "0.55rem 0.75rem",
+                    textAlign: "left",
+                    background: sel ? `${C.cyan}14` : "transparent",
+                    border: `1px solid ${sel ? C.cyan : C.border}`,
+                    color: sel ? C.cyan : C.muted,
+                    cursor: "pointer",
+                    clipPath: clip.sm,
+                    transition: "all 0.13s",
+                    outline: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.cyan + "45";
+                      e.currentTarget.style.color = C.text;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sel) {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.muted;
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      filter: sel ? `drop-shadow(0 0 6px ${C.cyan}80)` : "none",
+                    }}
+                  >
+                    <AnimatedSprite
+                      frames={frames as any}
+                      palette={charReg.palette}
+                      scale={2}
+                      fps={sel ? 4 : 2}
+                      outfit={config.outfit}
+                      accessory={config.accessory}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: 600 }}>
+                      {a.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.57rem",
+                        opacity: 0.6,
+                        marginTop: "0.1rem",
+                      }}
+                    >
+                      {a.desc}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab === 5 && (
+        <>
+          <Label>Anchor position on the e-ink canvas</Label>
+          <div
+            style={{
+              display: "flex",
+              gap: "2.5rem",
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "0.6rem",
+                  color: C.muted,
+                  fontFamily: "'Courier New',monospace",
+                  marginBottom: "0.7rem",
+                }}
+              >
+                click to place
+              </div>
+              <PositionGrid
+                value={config.position}
+                onChange={set("position")}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <div
+                style={{
+                  padding: "0.8rem",
+                  background: `${C.cyan}0e`,
+                  border: `1px solid ${C.cyan}35`,
+                  clipPath: clip.sm,
+                  marginBottom: "0.8rem",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "1.3rem",
+                    color: C.cyan,
+                    fontWeight: 700,
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  {POS_ICONS[config.position]}{" "}
+                  {config.position.replace(/-/g, " ")}
+                </div>
+                <div style={{ fontSize: "0.62rem", color: C.muted }}>
+                  Companion anchored {config.position.replace(/-/g, " ")} of
+                  canvas
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: "0.63rem",
+                  color: C.muted,
+                  lineHeight: 1.65,
+                }}
+              >
+                Stats bars, XP counters, and overlays automatically reflow
+                around the companion&apos;s anchor point on the physical
+                display.
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
 
 export default function TamagotchiPage() {
   const router = useRouter();
@@ -772,9 +1030,7 @@ export default function TamagotchiPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // All config comes from the shared provider — no local state duplication
   const { config, setConfig, saveConfig } = useTamagotchi();
-
   const set = (k: keyof typeof config) => (v: string) => setConfig({ [k]: v });
 
   const handleSave = async () => {
@@ -796,7 +1052,6 @@ export default function TamagotchiPage() {
         background: C.bg,
         color: C.text,
         fontFamily: "system-ui,-apple-system,sans-serif",
-        padding: "1.75rem 2rem",
       }}
     >
       <style>{`
@@ -815,720 +1070,509 @@ export default function TamagotchiPage() {
         @keyframes kfPulse{0%,100%{opacity:1}50%{opacity:.25}}
         @keyframes kfFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes kfGlow{0%,100%{box-shadow:0 0 8px #05d9e830}50%{box-shadow:0 0 24px #05d9e860}}
+
+        /* ─── Desktop (>1024px): original layout, display as-is ─── */
+        .desktop-only { display: block; }
+        .mobile-tablet-only { display: none; }
+
+        /* ─── Tablet + Mobile (≤1024px): new layout ─── */
+        @media (max-width: 1024px) {
+          .desktop-only { display: none !important; }
+          .mobile-tablet-only { display: flex !important; }
+
+          /* Tablet: preview left, editor right — side by side */
+          .ml-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            align-items: start;
+          }
+          .ml-preview-col { position: sticky; top: 1rem; }
+          .ml-editor-col { display: flex; flex-direction: column; gap: 0.65rem; }
+
+          /* Tab bar wraps on tablet */
+          .ml-tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+
+          /* Tablet grids: 3 cols */
+          .rsp-species-grid { grid-template-columns: repeat(3,1fr) !important; }
+          .rsp-bg-grid      { grid-template-columns: repeat(3,1fr) !important; }
+          .rsp-outfit-grid  { grid-template-columns: repeat(3,1fr) !important; }
+          .rsp-anim-grid    { grid-template-columns: 1fr !important; }
+        }
+
+        /* ─── Mobile (≤600px): stacked — preview top, editor below ─── */
+        @media (max-width: 600px) {
+          .ml-header { padding: 0.75rem 0.9rem !important; }
+          .ml-header-title { font-size: 1.05rem !important; }
+          .ml-header-sub { display: none !important; }
+          .ml-save-label-long { display: none; }
+          .ml-save-label-short { display: inline !important; }
+
+          /* Single column, preview on top */
+          .ml-body {
+            grid-template-columns: 1fr !important;
+            padding: 0.75rem 0.9rem !important;
+            gap: 0.75rem !important;
+          }
+          .ml-preview-col { position: static !important; }
+
+          /* Tab bar: single scrollable row, no wrap */
+          .ml-tabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+          }
+          .ml-tabs::-webkit-scrollbar { display: none; }
+          .ml-tab-full  { display: none !important; }
+          .ml-tab-short { display: inline !important; }
+
+          /* Mobile grids: 2 cols */
+          .rsp-species-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .rsp-bg-grid      { grid-template-columns: repeat(2,1fr) !important; }
+          .rsp-outfit-grid  { grid-template-columns: repeat(2,1fr) !important; }
+          .rsp-anim-grid    { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "2rem",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontWeight: 800,
-              fontSize: "1.65rem",
-              letterSpacing: "-0.01em",
-              background: `linear-gradient(95deg,${C.cyan} 0%,${C.purple} 55%,${C.pink} 100%)`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              marginBottom: "0.3rem",
-              lineHeight: 1.1,
-            }}
-          >
-            Tamagotchi Studio
-          </div>
-          <div
-            style={{
-              fontFamily: "'Courier New',monospace",
-              fontSize: "0.6rem",
-              color: C.muted,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-            }}
-          >
-            companion customization · frame screen manager
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {saved && (
-            <div style={{ animation: "kfFadeUp 0.2s ease" }}>
-              <Pill color={C.cyan} pulse>
-                Pushed to frame ✓
-              </Pill>
-            </div>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: "0.55rem 1.35rem",
-              background: `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`,
-              border: `1px solid ${C.cyan}`,
-              color: C.cyan,
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              cursor: saving ? "wait" : "pointer",
-              clipPath: clip.md,
-              letterSpacing: "0.06em",
-              outline: "none",
-              animation: saving ? "none" : "kfGlow 2.5s ease-in-out infinite",
-              transition: "background 0.15s",
-              opacity: saving ? 0.6 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!saving)
-                e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}35,${C.purple}35)`;
-            }}
-            onMouseLeave={(e) => {
-              if (!saving)
-                e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`;
-            }}
-          >
-            {saving ? "Saving…" : "Push to Frame →"}
-          </button>
-        </div>
-      </div>
-
-      {/* Main grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 360px",
-          gap: "1.25rem",
-          alignItems: "start",
-        }}
-      >
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
-        >
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: "0.28rem", flexWrap: "wrap" }}>
-            {SECTION_TABS.map((t, i) => {
-              const active = i === tab;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(i)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.45rem",
-                    padding: "0.38rem 0.82rem",
-                    background: active ? `${C.cyan}1e` : "transparent",
-                    border: `1px solid ${active ? C.cyan : C.border}`,
-                    color: active ? C.cyan : C.muted,
-                    fontSize: "0.72rem",
-                    fontWeight: active ? 600 : 400,
-                    cursor: "pointer",
-                    clipPath: clip.sm,
-                    transition: "all 0.13s",
-                    outline: "none",
-                    letterSpacing: "0.03em",
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <Card style={{ animation: "kfFadeUp 0.18s ease", minHeight: 300 }}>
-            {/* SPECIES */}
-            {tab === 0 && (
-              <>
-                <Label>Choose your companion species</Label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {SPECIES.map((item) => {
-                    const reg = item.pixelId
-                      ? CHAR_REGISTRY[item.pixelId]
-                      : null;
-                    const sel = config.species === item.id;
-                    const accentCol = reg?.color ?? C.muted;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          if (reg) set("species")(item.id);
-                        }}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          padding: "0.75rem 0.3rem",
-                          background: sel ? `${accentCol}18` : "transparent",
-                          border: `1px solid ${sel ? accentCol : C.border}`,
-                          color: sel ? accentCol : C.muted,
-                          cursor: reg ? "pointer" : "not-allowed",
-                          clipPath: clip.sm,
-                          transition: "all 0.14s",
-                          outline: "none",
-                          opacity: reg ? 1 : 0.4,
-                          position: "relative",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (reg && !sel) {
-                            e.currentTarget.style.borderColor =
-                              accentCol + "66";
-                            e.currentTarget.style.color = C.text;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (reg && !sel) {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.color = C.muted;
-                          }
-                        }}
-                      >
-                        {reg ? (
-                          <div
-                            style={{
-                              filter: sel
-                                ? `drop-shadow(0 0 8px ${accentCol}80)`
-                                : "none",
-                              transition: "filter 0.2s",
-                            }}
-                          >
-                            <AnimatedSprite
-                              frames={reg.idle}
-                              palette={reg.palette}
-                              scale={3}
-                              fps={2}
-                              outfit={config.outfit}
-                              accessory={config.accessory}
-                            />
-                          </div>
-                        ) : (
-                          <div
-                            style={{
-                              width: 30,
-                              height: 33,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.4rem",
-                            }}
-                          >
-                            ?
-                          </div>
-                        )}
-                        <span
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: sel ? 600 : 400,
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "0.52rem",
-                            color: sel ? `${accentCol}aa` : C.muted,
-                            textAlign: "center",
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {item.desc}
-                        </span>
-                        {!reg && (
-                          <span
-                            style={{
-                              position: "absolute",
-                              top: 4,
-                              right: 4,
-                              fontSize: "0.45rem",
-                              fontFamily: "'Courier New',monospace",
-                              color: C.muted,
-                              border: `1px solid ${C.border}`,
-                              padding: "0 3px",
-                              clipPath:
-                                "polygon(2px 0,100% 0,100% calc(100% - 2px),calc(100% - 2px) 100%,0 100%,0 2px)",
-                            }}
-                          >
-                            SOON
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* BACKGROUND */}
-            {tab === 1 && (
-              <>
-                <Label>Frame background environment</Label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {BACKGROUNDS.map((item) => {
-                    const sel = config.background === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => set("background")(item.id)}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          padding: "0.5rem 0.3rem",
-                          background: sel ? `${C.cyan}12` : "transparent",
-                          border: `1px solid ${sel ? C.cyan : C.border}`,
-                          color: sel ? C.cyan : C.muted,
-                          cursor: "pointer",
-                          clipPath: clip.sm,
-                          transition: "all 0.14s",
-                          outline: "none",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.cyan + "55";
-                            e.currentTarget.style.color = C.text;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.color = C.muted;
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            border: `1px solid ${sel ? C.cyan : C.border}`,
-                            clipPath: clip.sm,
-                            overflow: "hidden",
-                            boxShadow: sel ? `0 0 10px ${C.cyan}40` : "none",
-                            transition: "all 0.14s",
-                          }}
-                        >
-                          <PixelBg type={item.id} scale={2} />
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "0.58rem",
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* OUTFIT */}
-            {tab === 2 && (
-              <>
-                <Label>Dress your companion</Label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: "0.4rem",
-                  }}
-                >
-                  {OUTFITS.map((item) => {
-                    const sel = config.outfit === item.id;
-                    const charReg =
-                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => set("outfit")(item.id)}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          padding: "0.75rem 0.4rem",
-                          background: sel ? `${C.cyan}16` : "transparent",
-                          border: `1px solid ${sel ? C.cyan : C.border}`,
-                          color: sel ? C.cyan : C.muted,
-                          cursor: "pointer",
-                          clipPath: clip.sm,
-                          transition: "all 0.14s",
-                          outline: "none",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.cyan + "55";
-                            e.currentTarget.style.color = C.text;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.color = C.muted;
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            filter: sel
-                              ? `drop-shadow(0 0 6px ${C.cyan}55)`
-                              : "none",
-                          }}
-                        >
-                          <AnimatedSprite
-                            frames={charReg.idle}
-                            palette={charReg.palette}
-                            scale={3}
-                            fps={2}
-                            outfit={item.id}
-                            accessory={config.accessory}
-                          />
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: sel ? 600 : 400,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* ACCESSORY */}
-            {tab === 3 && (
-              <>
-                <Label>Equip an accessory</Label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: "0.4rem",
-                  }}
-                >
-                  {ACCESSORIES.map((item) => {
-                    const sel = config.accessory === item.id;
-                    const charReg =
-                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => set("accessory")(item.id)}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          padding: "0.75rem 0.4rem",
-                          background: sel ? `${C.cyan}16` : "transparent",
-                          border: `1px solid ${sel ? C.cyan : C.border}`,
-                          color: sel ? C.cyan : C.muted,
-                          cursor: "pointer",
-                          clipPath: clip.sm,
-                          transition: "all 0.14s",
-                          outline: "none",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.cyan + "55";
-                            e.currentTarget.style.color = C.text;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.color = C.muted;
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            filter: sel
-                              ? `drop-shadow(0 0 6px ${C.cyan}55)`
-                              : "none",
-                          }}
-                        >
-                          <AnimatedSprite
-                            frames={charReg.idle}
-                            palette={charReg.palette}
-                            scale={3}
-                            fps={2}
-                            outfit={config.outfit}
-                            accessory={item.id}
-                          />
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: sel ? 600 : 400,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* ANIMATION */}
-            {tab === 4 && (
-              <>
-                <Label>Idle animation style</Label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.45rem",
-                  }}
-                >
-                  {ANIMATIONS.map((a) => {
-                    const sel = config.animation === a.id;
-                    const charReg =
-                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
-                    const frames =
-                      charReg[a.mood as keyof typeof charReg] ?? charReg.idle;
-                    return (
-                      <button
-                        key={a.id}
-                        onClick={() => set("animation")(a.id)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.7rem",
-                          padding: "0.55rem 0.75rem",
-                          textAlign: "left",
-                          background: sel ? `${C.cyan}14` : "transparent",
-                          border: `1px solid ${sel ? C.cyan : C.border}`,
-                          color: sel ? C.cyan : C.muted,
-                          cursor: "pointer",
-                          clipPath: clip.sm,
-                          transition: "all 0.13s",
-                          outline: "none",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.cyan + "45";
-                            e.currentTarget.style.color = C.text;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!sel) {
-                            e.currentTarget.style.borderColor = C.border;
-                            e.currentTarget.style.color = C.muted;
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            flexShrink: 0,
-                            filter: sel
-                              ? `drop-shadow(0 0 6px ${C.cyan}80)`
-                              : "none",
-                          }}
-                        >
-                          <AnimatedSprite
-                            frames={frames as any}
-                            palette={charReg.palette}
-                            scale={2}
-                            fps={sel ? 4 : 2}
-                            outfit={config.outfit}
-                            accessory={config.accessory}
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.75rem", fontWeight: 600 }}>
-                            {a.label}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.57rem",
-                              opacity: 0.6,
-                              marginTop: "0.1rem",
-                            }}
-                          >
-                            {a.desc}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* POSITION */}
-            {tab === 5 && (
-              <>
-                <Label>Anchor position on the e-ink canvas</Label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "2.5rem",
-                    alignItems: "flex-start",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "0.6rem",
-                        color: C.muted,
-                        fontFamily: "'Courier New',monospace",
-                        marginBottom: "0.7rem",
-                      }}
-                    >
-                      click to place
-                    </div>
-                    <PositionGrid
-                      value={config.position}
-                      onChange={set("position")}
-                    />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 180 }}>
-                    <div
-                      style={{
-                        padding: "0.8rem",
-                        background: `${C.cyan}0e`,
-                        border: `1px solid ${C.cyan}35`,
-                        clipPath: clip.sm,
-                        marginBottom: "0.8rem",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "1.3rem",
-                          color: C.cyan,
-                          fontWeight: 700,
-                          marginBottom: "0.25rem",
-                        }}
-                      >
-                        {POS_ICONS[config.position]}{" "}
-                        {config.position.replace(/-/g, " ")}
-                      </div>
-                      <div style={{ fontSize: "0.62rem", color: C.muted }}>
-                        Companion anchored {config.position.replace(/-/g, " ")}{" "}
-                        of canvas
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.63rem",
-                        color: C.muted,
-                        lineHeight: 1.65,
-                      }}
-                    >
-                      Stats bars, XP counters, and overlays automatically reflow
-                      around the companion&apos;s anchor point on the physical
-                      display.
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* SCREENS */}
-            {tab === 6 && <ScreenReorder />}
-          </Card>
-        </div>
-
-        {/* Sidebar */}
+      <div className="desktop-only" style={{ padding: "1.75rem 2rem" }}>
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: "0.85rem",
-            position: "sticky",
-            top: "1.75rem",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            marginBottom: "2rem",
           }}
         >
-          <Card>
+          <div>
             <div
+              style={{
+                fontWeight: 800,
+                fontSize: "1.65rem",
+                letterSpacing: "-0.01em",
+                background: `linear-gradient(95deg,${C.cyan} 0%,${C.purple} 55%,${C.pink} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                marginBottom: "0.3rem",
+                lineHeight: 1.1,
+              }}
+            >
+              Tamagotchi Studio
+            </div>
+            <div
+              style={{
+                fontFamily: "'Courier New',monospace",
+                fontSize: "0.6rem",
+                color: C.muted,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}
+            >
+              companion customization · frame screen manager
+            </div>
+          </div>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
+            {saved && (
+              <div style={{ animation: "kfFadeUp 0.2s ease" }}>
+                <Pill color={C.cyan} pulse>
+                  Pushed to frame ✓
+                </Pill>
+              </div>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: "0.55rem 1.35rem",
+                background: `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`,
+                border: `1px solid ${C.cyan}`,
+                color: C.cyan,
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                cursor: saving ? "wait" : "pointer",
+                clipPath: clip.md,
+                letterSpacing: "0.06em",
+                outline: "none",
+                animation: saving ? "none" : "kfGlow 2.5s ease-in-out infinite",
+                transition: "background 0.15s",
+                opacity: saving ? 0.6 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!saving)
+                  e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}35,${C.purple}35)`;
+              }}
+              onMouseLeave={(e) => {
+                if (!saving)
+                  e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`;
+              }}
+            >
+              {saving ? "Saving…" : "Push to Frame →"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 360px",
+            gap: "1.25rem",
+            alignItems: "start",
+          }}
+        >
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
+          >
+            <div style={{ display: "flex", gap: "0.28rem", flexWrap: "wrap" }}>
+              {SECTION_TABS.map((t, i) => {
+                const active = i === tab;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(i)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.45rem",
+                      padding: "0.38rem 0.82rem",
+                      background: active ? `${C.cyan}1e` : "transparent",
+                      border: `1px solid ${active ? C.cyan : C.border}`,
+                      color: active ? C.cyan : C.muted,
+                      fontSize: "0.72rem",
+                      fontWeight: active ? 600 : 400,
+                      cursor: "pointer",
+                      clipPath: clip.sm,
+                      transition: "all 0.13s",
+                      outline: "none",
+                      letterSpacing: "0.03em",
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+            <Card style={{ animation: "kfFadeUp 0.18s ease", minHeight: 300 }}>
+              <TabContent tab={tab} config={config} set={set} />
+            </Card>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              position: "sticky",
+              top: "1.75rem",
+            }}
+          >
+            <Card>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "0.7rem",
+                }}
+              >
+                <Label>Live preview</Label>
+                <Pill color={C.purple}>800 × 480</Pill>
+              </div>
+              <FramePreview cfg={config} />
+              <div
+                style={{
+                  marginTop: "0.85rem",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.3rem 0.6rem",
+                  padding: "0.65rem",
+                  background: "#12121e",
+                  clipPath: clip.sm,
+                }}
+              >
+                {[
+                  [
+                    "Species",
+                    SPECIES.find((s) => s.id === config.species)?.label,
+                  ],
+                  [
+                    "Background",
+                    BACKGROUNDS.find((b) => b.id === config.background)?.label,
+                  ],
+                  [
+                    "Outfit",
+                    OUTFITS.find((o) => o.id === config.outfit)?.label,
+                  ],
+                  [
+                    "Accessory",
+                    ACCESSORIES.find((a) => a.id === config.accessory)?.label,
+                  ],
+                  [
+                    "Animation",
+                    ANIMATIONS.find((a) => a.id === config.animation)?.label,
+                  ],
+                  ["Position", config.position.replace(/-/g, " ")],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "0.4rem",
+                      fontSize: "0.58rem",
+                      fontFamily: "'Courier New',monospace",
+                    }}
+                  >
+                    <span style={{ color: C.muted }}>{k}</span>
+                    <span
+                      style={{ color: C.cyan, textTransform: "capitalize" }}
+                    >
+                      {v}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="mobile-tablet-only"
+        style={{ flexDirection: "column", minHeight: "100vh" }}
+      >
+        <div
+          className="ml-header"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1rem 1.25rem",
+            borderBottom: `1px solid ${C.border}`,
+            gap: "0.75rem",
+            background: C.panel,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              className="ml-header-title"
+              style={{
+                fontWeight: 800,
+                fontSize: "1.3rem",
+                background: `linear-gradient(95deg,${C.cyan} 0%,${C.purple} 55%,${C.pink} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                lineHeight: 1.15,
+                letterSpacing: "-0.01em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Tamagotchi Studio
+            </div>
+            <div
+              className="ml-header-sub"
+              style={{
+                fontFamily: "'Courier New',monospace",
+                fontSize: "0.53rem",
+                color: C.muted,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                marginTop: "0.12rem",
+              }}
+            >
+              customization · screen manager
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              flexShrink: 0,
+            }}
+          >
+            {saved && (
+              <div style={{ animation: "kfFadeUp 0.2s ease" }}>
+                <Pill color={C.cyan} pulse>
+                  Saved
+                </Pill>
+              </div>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "0.7rem",
+                gap: "0.35rem",
+                padding: "0.45rem 1rem",
+                background: `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`,
+                border: `1px solid ${C.cyan}`,
+                color: C.cyan,
+                fontSize: "0.72rem",
+                fontWeight: 600,
+                cursor: saving ? "wait" : "pointer",
+                clipPath: clip.md,
+                letterSpacing: "0.05em",
+                outline: "none",
+                opacity: saving ? 0.6 : 1,
+                animation: saving ? "none" : "kfGlow 2.5s ease-in-out infinite",
+              }}
+              onMouseEnter={(e) => {
+                if (!saving)
+                  e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}35,${C.purple}35)`;
+              }}
+              onMouseLeave={(e) => {
+                if (!saving)
+                  e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`;
               }}
             >
-              <Label>Live preview</Label>
-              <Pill color={C.purple}>800 × 480</Pill>
-            </div>
-            <FramePreview cfg={config} />
+              {saving ? (
+                "Saving…"
+              ) : (
+                <>
+                  <span className="ml-save-label-long">Push to Frame →</span>
+                  <span
+                    className="ml-save-label-short"
+                    style={{ display: "none" }}
+                  >
+                    Push →
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="ml-body">
+          <div className="ml-preview-col">
             <div
               style={{
-                marginTop: "0.85rem",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "0.3rem 0.6rem",
-                padding: "0.65rem",
-                background: "#12121e",
-                clipPath: clip.sm,
+                background: C.panel,
+                border: `1px solid ${C.border}`,
+                clipPath: clip.lg,
+                padding: "0.9rem",
               }}
             >
-              {[
-                [
-                  "Species",
-                  SPECIES.find((s) => s.id === config.species)?.label,
-                ],
-                [
-                  "Background",
-                  BACKGROUNDS.find((b) => b.id === config.background)?.label,
-                ],
-                ["Outfit", OUTFITS.find((o) => o.id === config.outfit)?.label],
-                [
-                  "Accessory",
-                  ACCESSORIES.find((a) => a.id === config.accessory)?.label,
-                ],
-                [
-                  "Animation",
-                  ANIMATIONS.find((a) => a.id === config.animation)?.label,
-                ],
-                ["Position", config.position.replace(/-/g, " ")],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "0.4rem",
-                    fontSize: "0.58rem",
-                    fontFamily: "'Courier New',monospace",
-                  }}
-                >
-                  <span style={{ color: C.muted }}>{k}</span>
-                  <span style={{ color: C.cyan, textTransform: "capitalize" }}>
-                    {v}
-                  </span>
-                </div>
-              ))}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "0.55rem",
+                }}
+              >
+                <Label>Live preview</Label>
+                <Pill color={C.purple}>800×480</Pill>
+              </div>
+              <FramePreview cfg={config} />
+              <div
+                style={{
+                  marginTop: "0.65rem",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.28rem 0.5rem",
+                  padding: "0.6rem",
+                  background: "#12121e",
+                  clipPath: clip.sm,
+                }}
+              >
+                {[
+                  [
+                    "Species",
+                    SPECIES.find((s) => s.id === config.species)?.label,
+                  ],
+                  [
+                    "BG",
+                    BACKGROUNDS.find((b) => b.id === config.background)?.label,
+                  ],
+                  [
+                    "Outfit",
+                    OUTFITS.find((o) => o.id === config.outfit)?.label,
+                  ],
+                  [
+                    "Acc",
+                    ACCESSORIES.find((a) => a.id === config.accessory)?.label,
+                  ],
+                  [
+                    "Anim",
+                    ANIMATIONS.find((a) => a.id === config.animation)?.label,
+                  ],
+                  ["Pos", config.position.replace(/-/g, " ")],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "0.3rem",
+                      fontSize: "0.57rem",
+                      fontFamily: "'Courier New',monospace",
+                    }}
+                  >
+                    <span style={{ color: C.muted }}>{k}</span>
+                    <span
+                      style={{
+                        color: C.cyan,
+                        textTransform: "capitalize",
+                        textAlign: "right",
+                      }}
+                    >
+                      {v}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </Card>
+          </div>
+
+          <div className="ml-editor-col">
+            <div className="ml-tabs">
+              {SECTION_TABS.map((t, i) => {
+                const active = i === tab;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(i)}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      background: active ? `${C.cyan}1e` : "transparent",
+                      border: `1px solid ${active ? C.cyan : C.border}`,
+                      color: active ? C.cyan : C.muted,
+                      fontSize: "0.68rem",
+                      fontWeight: active ? 600 : 400,
+                      cursor: "pointer",
+                      clipPath: clip.sm,
+                      transition: "all 0.13s",
+                      outline: "none",
+                      letterSpacing: "0.03em",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span className="ml-tab-full">{t.label}</span>
+                    <span className="ml-tab-short" style={{ display: "none" }}>
+                      {SECTION_TABS_SHORT[i]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                background: C.panel,
+                border: `1px solid ${C.border}`,
+                clipPath: clip.lg,
+                padding: "1rem",
+                animation: "kfFadeUp 0.18s ease",
+              }}
+            >
+              <TabContent tab={tab} config={config} set={set} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

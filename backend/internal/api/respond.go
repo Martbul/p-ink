@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/martbul/p-ink/internal/errs"
 )
 
 func JSON(w http.ResponseWriter, status int, data any) {
@@ -13,8 +15,28 @@ func JSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
-func Error(w http.ResponseWriter, status int, message string) {
-	JSON(w, status, map[string]string{"error": message})
+// Error logs the full error chain and writes a safe JSON error response.
+// Always pass the real error here — never a string summary.
+//
+// Usage:
+//
+//	tama, err := db.GetTamagotchiByOwner(...)
+//	if err != nil {
+//	    Error(w, errs.E(errs.Op("api.UpdateAppearance"), errs.KindInternal, err))
+//	    return
+//	}
+func Error(w http.ResponseWriter, err error) {
+	errs.HTTPResponse(w, err)
+}
+
+// Shorthand for simple validation errors that have no underlying error to wrap.
+func BadRequest(w http.ResponseWriter, msg string) {
+	Error(w, errs.E(errs.KindInvalid, msg))
+}
+
+// Shorthand for not-found errors.
+func NotFound(w http.ResponseWriter, msg string) {
+	Error(w, errs.E(errs.KindNotFound, msg))
 }
 
 func OK(w http.ResponseWriter, data any) {

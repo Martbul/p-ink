@@ -7,22 +7,23 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martbul/p-ink/internal/db"
+	"github.com/martbul/p-ink/internal/errs"
 	"github.com/martbul/p-ink/internal/models"
 )
 
-// PollResponse is the JSON the ESP32 receives on every poll.
 type PollResponse struct {
-	ImageURL       string                 `json:"image_url"`
-	ImageHash      string                 `json:"image_hash"`
-	PollIntervalMs uint32                 `json:"poll_interval_ms"`
-	OTAUrl         string                 `json:"ota_url"`
-	OTAVersion     string                 `json:"ota_version"`
-	Paired         bool                   `json:"paired"`
+	ImageURL       string                  `json:"image_url"`
+	ImageHash      string                  `json:"image_hash"`
+	PollIntervalMs uint32                  `json:"poll_interval_ms"`
+	OTAUrl         string                  `json:"ota_url"`
+	OTAVersion     string                  `json:"ota_version"`
+	Paired         bool                    `json:"paired"`
 	Tamagotchi     *models.FrameTamagotchi `json:"tamagotchi,omitempty"`
 }
 
 // FramePoll  POST /api/frame/poll  — no user auth, MAC-based
 func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.FramePoll")
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			MAC       string `json:"mac"`
@@ -30,27 +31,25 @@ func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
 			BootCount uint32 `json:"boot_count"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			Error(w, http.StatusBadRequest, "invalid JSON")
+			BadRequest(w, "invalid JSON")
 			return
 		}
 
-		// Accept MAC from either body or header
 		mac := strings.ToUpper(strings.TrimSpace(req.MAC))
 		if mac == "" {
 			mac = strings.ToUpper(strings.TrimSpace(r.Header.Get("X-Device-Mac")))
 		}
 		if mac == "" {
-			Error(w, http.StatusBadRequest, "mac is required")
+			BadRequest(w, "mac is required")
 			return
 		}
 
 		device, err := db.GetDeviceByMAC(r.Context(), pool, mac)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up device"))
 			return
 		}
 		if device == nil {
-			// Unknown device — firmware shows the pairing screen
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
 			_ = json.NewEncoder(w).Encode(PollResponse{PollIntervalMs: 60_000, Paired: false})
@@ -72,22 +71,19 @@ func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
 
 		fs, err := db.GetFrameState(r.Context(), pool, device.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to fetch frame state"))
 			return
 		}
 
 		resp := PollResponse{PollIntervalMs: 60_000, Paired: true}
 		if fs != nil {
-			resp.ImageURL  = fs.ImageURL
+			resp.ImageURL = fs.ImageURL
 			resp.ImageHash = fs.ImageHash
 		}
 
-		// Attach the owner's Tamagotchi state for frame rendering
 		if ft, err := db.GetFrameTamagotchi(r.Context(), pool, device.OwnerID); err == nil && ft != nil {
 			resp.Tamagotchi = ft
 		}
-
-		// TODO: compare req.Firmware and set resp.OTAUrl / resp.OTAVersion when needed
 
 		OK(w, resp)
 	}

@@ -9,21 +9,23 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/martbul/p-ink/internal/db"
+	"github.com/martbul/p-ink/internal/errs"
 	"github.com/martbul/p-ink/internal/middleware"
 )
 
 // CreateCouple  POST /api/couples
 func CreateCouple(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.CreateCouple")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		existing, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
 			return
 		}
 		if existing != nil {
-			Error(w, http.StatusConflict, "already in a couple")
+			Error(w, errs.E(op, errs.KindConflict, "already in a couple"))
 			return
 		}
 
@@ -35,7 +37,7 @@ func CreateCouple(pool *pgxpool.Pool) http.HandlerFunc {
 
 		couple, err := db.CreateCouple(r.Context(), pool, user.ID, body.Timezone)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "could not create couple")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to create couple"))
 			return
 		}
 		Created(w, couple)
@@ -44,16 +46,17 @@ func CreateCouple(pool *pgxpool.Pool) http.HandlerFunc {
 
 // GetCouple  GET /api/couples/me
 func GetCouple(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.GetCouple")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
 			return
 		}
 		if couple == nil {
-			Error(w, http.StatusNotFound, "not in a couple")
+			NotFound(w, "not in a couple")
 			return
 		}
 
@@ -69,12 +72,17 @@ func GetCouple(pool *pgxpool.Pool) http.HandlerFunc {
 
 // UpdateCouple  PATCH /api/couples/me
 func UpdateCouple(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.UpdateCouple")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if err != nil || couple == nil {
-			Error(w, http.StatusNotFound, "not in a couple")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil {
+			NotFound(w, "not in a couple")
 			return
 		}
 
@@ -82,12 +90,12 @@ func UpdateCouple(pool *pgxpool.Pool) http.HandlerFunc {
 			Timezone string `json:"timezone"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Timezone == "" {
-			Error(w, http.StatusBadRequest, "timezone is required")
+			BadRequest(w, "timezone is required")
 			return
 		}
 
 		if err := db.UpdateCoupleTimezone(r.Context(), pool, couple.ID, body.Timezone); err != nil {
-			Error(w, http.StatusInternalServerError, "could not update")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to update timezone"))
 			return
 		}
 		couple.Timezone = body.Timezone
@@ -97,22 +105,27 @@ func UpdateCouple(pool *pgxpool.Pool) http.HandlerFunc {
 
 // CreateInvite  POST /api/couples/invite
 func CreateInvite(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.CreateInvite")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
 		couple, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
-		if err != nil || couple == nil {
-			Error(w, http.StatusBadRequest, "create a couple first")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil {
+			BadRequest(w, "create a couple first")
 			return
 		}
 		if couple.UserAID != user.ID {
-			Error(w, http.StatusForbidden, "only the couple creator can invite")
+			Error(w, errs.E(op, errs.KindForbidden, "only the couple creator can invite"))
 			return
 		}
 
 		token, err := db.CreateInviteToken(r.Context(), pool, couple.ID, user.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "could not create invite")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to create invite token"))
 			return
 		}
 
@@ -130,20 +143,25 @@ func CreateInvite(pool *pgxpool.Pool) http.HandlerFunc {
 
 // GetInviteInfo  GET /api/couples/invite/{token}  — public, no auth needed
 func GetInviteInfo(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.GetInviteInfo")
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := mux.Vars(r)["token"]
 
 		invite, err := db.GetInviteToken(r.Context(), pool, token)
-		if err != nil || invite == nil {
-			Error(w, http.StatusNotFound, "invalid token")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up invite"))
+			return
+		}
+		if invite == nil {
+			NotFound(w, "invalid or expired token")
 			return
 		}
 		if invite.UsedAt != nil {
-			Error(w, http.StatusGone, "already used")
+			Error(w, errs.E(op, errs.KindConflict, "invite already used"))
 			return
 		}
 		if invite.ExpiresAt.Before(now()) {
-			Error(w, http.StatusGone, "expired")
+			Error(w, errs.E(op, errs.KindInvalid, "invite expired"))
 			return
 		}
 
@@ -157,13 +175,8 @@ func GetInviteInfo(pool *pgxpool.Pool) http.HandlerFunc {
 }
 
 // JoinCouple  POST /api/couples/join
-//
-// Accepts an invite token and activates the couple.
-// If the joining user is currently in a PENDING couple (one they created
-// themselves but nobody joined yet), that couple is silently deleted first
-// so they can join the new one. Active couples are never deleted this way —
-// the user must explicitly leave first.
 func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
+	const op = errs.Op("api.JoinCouple")
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.UserFromContext(r.Context())
 
@@ -171,76 +184,69 @@ func JoinCouple(pool *pgxpool.Pool) http.HandlerFunc {
 			Token string `json:"token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
-			Error(w, http.StatusBadRequest, "token is required")
+			BadRequest(w, "token is required")
 			return
 		}
 
 		invite, err := db.GetInviteToken(r.Context(), pool, body.Token)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up invite token"))
 			return
 		}
 		if invite == nil {
-			Error(w, http.StatusNotFound, "invalid token")
+			NotFound(w, "invalid token")
 			return
 		}
 		if invite.UsedAt != nil {
-			Error(w, http.StatusGone, "invite already used")
+			Error(w, errs.E(op, errs.KindConflict, "invite already used"))
 			return
 		}
 		if invite.ExpiresAt.Before(now()) {
-			Error(w, http.StatusGone, "invite expired")
+			Error(w, errs.E(op, errs.KindInvalid, "invite expired"))
 			return
 		}
 
-		// Check if the joiner already belongs to a couple.
 		existing, err := db.GetCoupleByUserID(r.Context(), pool, user.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "db error")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up existing couple"))
 			return
 		}
 		if existing != nil {
-			// Only allow proceeding if the existing couple is still pending
-			// (nobody has joined it yet). In that case, delete it so the user
-			// can join the new couple cleanly.
 			if existing.Status != "pending" {
-				Error(w, http.StatusConflict, "already in an active couple")
+				Error(w, errs.E(op, errs.KindConflict, "already in an active couple"))
 				return
 			}
-			// Make sure they're not joining their own invite
 			if existing.ID == invite.CoupleID {
-				Error(w, http.StatusBadRequest, "cannot join your own couple")
+				BadRequest(w, "cannot join your own couple")
 				return
 			}
-			// Delete the stale pending couple (cascade deletes invite_tokens,
-			// devices.couple_id is SET NULL via FK, tamagotchis cascade).
 			if err := db.DeleteCouple(r.Context(), pool, existing.ID); err != nil {
-				Error(w, http.StatusInternalServerError, "could not clear pending couple")
+				Error(w, errs.E(op, errs.KindInternal, err, "failed to clear pending couple"))
 				return
 			}
 		}
 
 		couple, err := db.GetCoupleByID(r.Context(), pool, invite.CoupleID)
-		if err != nil || couple == nil {
-			Error(w, http.StatusInternalServerError, "couple not found")
+		if err != nil {
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to look up couple"))
+			return
+		}
+		if couple == nil {
+			NotFound(w, "couple not found")
 			return
 		}
 		if couple.UserAID == user.ID {
-			Error(w, http.StatusBadRequest, "cannot join your own couple")
+			BadRequest(w, "cannot join your own couple")
 			return
 		}
 
 		updated, err := db.ActivateCouple(r.Context(), pool, couple.ID, user.ID)
 		if err != nil {
-			Error(w, http.StatusInternalServerError, "could not join couple")
+			Error(w, errs.E(op, errs.KindInternal, err, "failed to activate couple"))
 			return
 		}
 		_ = db.UseInviteToken(r.Context(), pool, body.Token, user.ID)
-
-		// Link BOTH partners' devices (if already paired) to this couple.
 		_ = db.LinkAllDevicesToCouple(r.Context(), pool, couple.ID, couple.UserAID, user.ID)
-
-		// Create both Tamagotchis now that the couple is active.
 		_ = db.CreateTamagotchisForCouple(r.Context(), pool, couple.ID, couple.UserAID, user.ID)
 
 		OK(w, updated)
