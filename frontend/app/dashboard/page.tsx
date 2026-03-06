@@ -625,7 +625,7 @@ function FrameStatusBar() {
   );
 }
 
-type ActionTab = "photo" | "message" | "draw";
+type ActionTab = "photo" | "love_letter" | "draw";
 
 function PhotoTab() {
   const { uploadContent } = useUser();
@@ -1842,7 +1842,7 @@ export default function DashboardPage() {
 
   const TABS: { id: ActionTab; label: string; color: string }[] = [
     { id: "photo", label: "Photo", color: C.pink },
-    { id: "message", label: "Message", color: C.cyan },
+    { id: "love_letter", label: "Love letter", color: C.cyan },
     { id: "draw", label: "Draw", color: C.purple },
   ];
 
@@ -1963,9 +1963,9 @@ export default function DashboardPage() {
                 </section>
               </div>
               <div className="flex flex-col gap-4">
-                <PartnerWidget />
+                {/* <PartnerWidget /> */}
                 <TamagotchiWidget />
-                <MyFrameWidget />
+                {/* <MyFrameWidget /> */}
               </div>
             </div>
           </>

@@ -396,7 +396,6 @@ function FramePreview({ cfg }: { cfg: any }) {
         />
       ))}
 
-      {/* ── Character: outfit + accessory baked into pixel grid ── */}
       <div
         style={{
           position: "absolute",
@@ -422,18 +421,17 @@ function FramePreview({ cfg }: { cfg: any }) {
         </div>
       </div>
 
-      {/* HUD */}
-      <div
+        <div
         style={{
           position: "absolute",
-          bottom: 8,
-          left: 12,
+          bottom: 166,
+          left: 210,
           zIndex: 5,
           fontFamily: "'Courier New',monospace",
           fontSize: "0.5rem",
           color: `${C.cyan}75`,
           display: "flex",
-          gap: "0.8rem",
+          gap: "0.5rem",
         }}
       >
         <span>❤ 87</span>
@@ -765,7 +763,7 @@ export default function TamagotchiPage() {
     position: "center",
   });
 
-  
+
   const [screens, setScreens] = useState([
     { id: "tamagotchi" },
     { id: "photo-replay" },
@@ -1517,71 +1515,6 @@ export default function TamagotchiPage() {
             </div>
           </Card>
 
-          <Card>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "0.7rem",
-              }}
-            >
-              <Label>Screen queue</Label>
-              <Pill color={C.cyan}>{screens.length} active</Pill>
-            </div>
-            {screens.map((s, i) => {
-              const meta = ALL_SCREENS.find((m) => m.id === s.id);
-              return (
-                <div
-                  key={s.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.32rem 0",
-                    borderBottom: `1px solid ${C.border}`,
-                    fontSize: "0.68rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 18,
-                      height: 18,
-                      flexShrink: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: `${i === 0 ? C.cyan : C.muted}18`,
-                      border: `1px solid ${i === 0 ? C.cyan : C.border}`,
-                      clipPath: clip.sm,
-                      fontFamily: "'Courier New',monospace",
-                      fontSize: "0.55rem",
-                      color: i === 0 ? C.cyan : C.muted,
-                    }}
-                  >
-                    {i === 0 ? "⌂" : i + 1}
-                  </span>
-                  <span>{meta?.emoji}</span>
-                  <span style={{ flex: 1, color: i === 0 ? C.cyan : C.text }}>
-                    {meta?.label}
-                  </span>
-                  {i === 0 && <Pill color={C.cyan}>Home</Pill>}
-                </div>
-              );
-            })}
-            <div
-              style={{
-                marginTop: "0.65rem",
-                textAlign: "center",
-                fontSize: "0.58rem",
-                color: C.muted,
-                fontFamily: "'Courier New',monospace",
-                letterSpacing: "0.06em",
-              }}
-            >
-              ← swipe left / right on frame →
-            </div>
-          </Card>
         </div>
       </div>
     </div>
