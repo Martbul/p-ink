@@ -62,6 +62,63 @@ function loadTamaConfig() {
   }
 }
 
+const SCREENS_STORAGE_KEY = "dashboard_screens";
+
+const ALL_SCREENS = [
+  {
+    id: "tamagotchi",
+    label: "Tamagotchi",
+    emoji: "🐾",
+    locked: true,
+    desc: "Your pet companion",
+  },
+  {
+    id: "photo-replay",
+    label: "Photo Replay",
+    emoji: "📸",
+    locked: false,
+    desc: "Latest partner photo",
+  },
+  {
+    id: "photo-slideshow",
+    label: "Slideshow",
+    emoji: "🎞️",
+    locked: false,
+    desc: "All photos rotating",
+  },
+  {
+    id: "custom-screen",
+    label: "Custom Screen",
+    emoji: "🖼️",
+    locked: false,
+    desc: "Your designed canvas",
+  },
+  {
+    id: "message-feed",
+    label: "Messages",
+    emoji: "💬",
+    locked: false,
+    desc: "Recent message thread",
+  },
+];
+
+const DEFAULT_SCREENS = [
+  { id: "tamagotchi" },
+  { id: "photo-replay" },
+  { id: "photo-slideshow" },
+  { id: "custom-screen" },
+];
+
+function loadScreens() {
+  if (typeof window === "undefined") return DEFAULT_SCREENS;
+  try {
+    const raw = localStorage.getItem(SCREENS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_SCREENS;
+  } catch {
+    return DEFAULT_SCREENS;
+  }
+}
+
 function isOnline(lastSeen?: string | null) {
   if (!lastSeen) return false;
   return Date.now() - new Date(lastSeen).getTime() < 10 * 60 * 1000;
@@ -625,9 +682,9 @@ function FrameStatusBar() {
   );
 }
 
-type ActionTab = "photo" | "love_letter" | "draw";
+// ── SEND ACTION WIDGETS ──────────────────────────────────────────────────────
 
-function PhotoTab() {
+function PhotoWidget() {
   const { uploadContent } = useUser();
   const modal = useModal();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -673,192 +730,241 @@ function PhotoTab() {
   return (
     <>
       {modal.Modal}
-      <div className="flex flex-col gap-4">
-        {preview ? (
-          <>
+      <div
+        className="relative overflow-hidden"
+        style={{ clipPath: poly, border: `1px solid rgba(255,255,255,0.07)` }}
+      >
+        {/* Header bar */}
+        <div
+          className="px-4 pt-4 pb-3 flex items-center justify-between"
+          style={{
+            background: `${C.pink}08`,
+            borderBottom: `1px solid ${C.pink}20`,
+          }}
+        >
+          <div className="flex items-center gap-2">
             <div
-              className="relative w-full overflow-hidden"
-              style={{ aspectRatio: "4/3", clipPath: poly }}
+              className="w-7 h-7 flex items-center justify-center"
+              style={{
+                clipPath: polyXs,
+                background: `${C.pink}15`,
+                border: `1px solid ${C.pink}40`,
+                color: C.pink,
+              }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview.src}
-                alt="Preview"
-                className="w-full h-full object-cover"
-                style={{ filter: "grayscale(0.3) contrast(1.1)" }}
-              />
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
+            <div>
+              <p
+                className="font-mono text-[8px] uppercase tracking-[0.2em]"
+                style={{ color: `${C.pink}70` }}
+              >
+                TRANSMIT_01
+              </p>
+              <h3
+                className="text-sm font-bold uppercase tracking-tight text-white"
+                style={{ fontFamily: "'Syne', sans-serif" }}
+              >
+                Photo
+              </h3>
+            </div>
+          </div>
+          <span
+            className="font-mono text-[9px] uppercase tracking-widest"
+            style={{ color: `${C.pink}60` }}
+          >
+            → frame
+          </span>
+        </div>
+
+        <div className="p-4 flex flex-col gap-3">
+          {preview ? (
+            <>
               <div
-                className="absolute bottom-2 right-2 font-mono text-[8px] uppercase px-2 py-1"
+                className="relative w-full overflow-hidden"
+                style={{ aspectRatio: "16/9", clipPath: polySm }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={preview.src}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                  style={{ filter: "grayscale(0.3) contrast(1.1)" }}
+                />
+                <div
+                  className="absolute bottom-2 right-2 font-mono text-[8px] uppercase px-2 py-1"
+                  style={{
+                    clipPath: polyXs,
+                    background: `${C.pink}25`,
+                    border: `1px solid ${C.pink}50`,
+                    color: C.pink,
+                  }}
+                >
+                  B/W on send
+                </div>
+              </div>
+              <input
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Add a caption... (optional)"
+                className="w-full font-mono text-xs px-3 py-2 outline-none"
                 style={{
                   clipPath: polyXs,
-                  background: `${C.cyan}25`,
-                  border: `1px solid ${C.cyan}50`,
-                  color: C.cyan,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                  color: "#fff",
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={send}
+                  disabled={uploading}
+                  className="flex-1 py-2.5 font-mono text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-50"
+                  style={{
+                    clipPath: polySm,
+                    background: `${C.pink}15`,
+                    border: `1.5px solid ${C.pink}`,
+                    color: C.pink,
+                  }}
+                  onMouseEnter={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.background = C.pink;
+                    b.style.color = "#07070f";
+                  }}
+                  onMouseLeave={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.background = `${C.pink}15`;
+                    b.style.color = C.pink;
+                  }}
+                >
+                  {uploading ? "Sending..." : "Send to frame //"}
+                </button>
+                <button
+                  onClick={() => {
+                    setPreview(null);
+                    setCaption("");
+                  }}
+                  className="px-3 font-mono text-[10px] uppercase tracking-widest"
+                  style={{
+                    clipPath: polyXs,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.3)",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                className="flex flex-col items-center justify-center gap-2 relative overflow-hidden cursor-pointer transition-all"
+                style={{
+                  minHeight: 110,
+                  border: `2px dashed ${C.pink}30`,
+                  background: `${C.pink}04`,
+                  clipPath: polySm,
+                }}
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    C.pink;
+                }}
+                onDragLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    `${C.pink}30`;
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleFiles(e.dataTransfer.files);
                 }}
               >
-                B/W dither on send
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 10px, ${C.pink}04 10px, ${C.pink}04 11px)`,
+                  }}
+                />
+                <div
+                  className="w-9 h-9 flex items-center justify-center z-10"
+                  style={{
+                    clipPath: polyXs,
+                    background: `${C.pink}10`,
+                    border: `1.5px solid ${C.pink}40`,
+                    color: C.pink,
+                  }}
+                >
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                  </svg>
+                </div>
+                <p
+                  className="font-mono text-[9px] uppercase tracking-widest z-10"
+                  style={{ color: "rgba(255,255,255,0.25)" }}
+                >
+                  Drop or click to upload
+                </p>
               </div>
-            </div>
-            <input
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Add a caption... (optional)"
-              className="w-full font-mono text-sm px-4 py-2.5 outline-none"
-              style={{
-                clipPath: polySm,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                color: "#fff",
-              }}
-            />
-            <div className="flex gap-2">
               <button
-                onClick={send}
-                disabled={uploading}
-                className="flex-1 py-3 font-mono text-xs uppercase font-bold tracking-widest transition-all disabled:opacity-50"
+                onClick={() => fileRef.current?.click()}
+                className="w-full py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all"
                 style={{
-                  clipPath: polySm,
-                  background: `${C.pink}15`,
-                  border: `1.5px solid ${C.pink}`,
-                  color: C.pink,
+                  clipPath: polyXs,
+                  border: `1px solid ${C.pink}25`,
+                  background: `${C.pink}06`,
+                  color: `${C.pink}aa`,
                 }}
                 onMouseEnter={(e) => {
                   const b = e.currentTarget as HTMLButtonElement;
-                  b.style.background = C.pink;
-                  b.style.color = "#07070f";
+                  b.style.borderColor = C.pink;
+                  b.style.color = C.pink;
                 }}
                 onMouseLeave={(e) => {
                   const b = e.currentTarget as HTMLButtonElement;
-                  b.style.background = `${C.pink}15`;
-                  b.style.color = C.pink;
+                  b.style.borderColor = `${C.pink}25`;
+                  b.style.color = `${C.pink}aa`;
                 }}
               >
-                {uploading ? "Sending..." : "Send to frame //"}
+                Browse files //
               </button>
-              <button
-                onClick={() => {
-                  setPreview(null);
-                  setCaption("");
-                }}
-                className="px-4 font-mono text-[10px] uppercase tracking-widest"
-                style={{
-                  clipPath: polyXs,
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  background: "transparent",
-                  color: "rgba(255,255,255,0.3)",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div
-              className="flex flex-col items-center justify-center gap-3 relative overflow-hidden cursor-pointer transition-all"
-              style={{
-                minHeight: 200,
-                border: `2px dashed ${C.pink}35`,
-                background: `${C.pink}04`,
-                clipPath: poly,
-              }}
-              onClick={() => fileRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                const d = e.currentTarget as HTMLDivElement;
-                d.style.borderColor = C.pink;
-                d.style.background = `${C.pink}0a`;
-              }}
-              onDragLeave={(e) => {
-                const d = e.currentTarget as HTMLDivElement;
-                d.style.borderColor = `${C.pink}35`;
-                d.style.background = `${C.pink}04`;
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleFiles(e.dataTransfer.files);
-              }}
-            >
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 10px, ${C.pink}04 10px, ${C.pink}04 11px)`,
-                }}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
               />
-              <div
-                className="w-11 h-11 flex items-center justify-center"
-                style={{
-                  clipPath: polyXs,
-                  background: `${C.pink}10`,
-                  border: `1.5px solid ${C.pink}50`,
-                  color: C.pink,
-                }}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="16 16 12 12 8 16" />
-                  <line x1="12" y1="12" x2="12" y2="21" />
-                  <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-                </svg>
-              </div>
-              <div className="text-center z-10">
-                <p
-                  className="font-bold uppercase tracking-tight text-sm text-white/70 mb-1"
-                  style={{ fontFamily: "'Syne', sans-serif" }}
-                >
-                  Drop a photo
-                </p>
-                <p
-                  className="font-mono text-[9px] uppercase tracking-widest"
-                  style={{ color: "rgba(255,255,255,0.2)" }}
-                >
-                  JPG · PNG · WEBP · max 20 MB
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full py-2.5 font-mono text-[10px] uppercase font-bold tracking-widest transition-all"
-              style={{
-                clipPath: polySm,
-                border: `1px solid ${C.pink}25`,
-                background: `${C.pink}06`,
-                color: `${C.pink}aa`,
-              }}
-              onMouseEnter={(e) => {
-                const b = e.currentTarget as HTMLButtonElement;
-                b.style.borderColor = C.pink;
-                b.style.color = C.pink;
-              }}
-              onMouseLeave={(e) => {
-                const b = e.currentTarget as HTMLButtonElement;
-                b.style.borderColor = `${C.pink}25`;
-                b.style.color = `${C.pink}aa`;
-              }}
-            >
-              Browse files //
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </>
   );
 }
 
-function MessageTab() {
+function MessageWidget() {
   const { sendMessage } = useUser();
   const modal = useModal();
   const [text, setText] = useState("");
@@ -880,7 +986,6 @@ function MessageTab() {
         ...ModalPresets.transmitError((err as Error).message),
         actions: [
           { label: "Dismiss", variant: "secondary", onClick: modal.close },
-          { label: "Retry →", variant: "primary", onClick: modal.close },
         ],
       });
     } finally {
@@ -894,110 +999,141 @@ function MessageTab() {
   return (
     <>
       {modal.Modal}
-      <div className="flex flex-col gap-4">
+      <div
+        className="relative overflow-hidden"
+        style={{
+          clipPath: polyRev,
+          border: `1px solid rgba(255,255,255,0.07)`,
+        }}
+      >
+        {/* Header bar */}
         <div
-          className="flex items-start gap-3 px-4 py-3"
+          className="px-4 pt-4 pb-3 flex items-center justify-between"
           style={{
-            clipPath: polyXs,
-            background: `${C.cyan}06`,
-            border: `1px solid ${C.cyan}18`,
+            background: `${C.cyan}08`,
+            borderBottom: `1px solid ${C.cyan}20`,
           }}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={C.cyan}
-            strokeWidth="2"
-            style={{ marginTop: 1, flexShrink: 0 }}
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <p
-            className="font-mono text-[9px] uppercase tracking-widest leading-relaxed"
-            style={{ color: "rgba(255,255,255,0.3)" }}
-          >
-            Text is rendered at high contrast on the frame. Shorter messages
-            display larger.
-          </p>
-        </div>
-        <div className="relative">
-          <textarea
-            rows={6}
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, maxLen))}
-            placeholder="Write something for their frame..."
-            className="w-full resize-none outline-none font-mono text-sm leading-relaxed px-4 py-3"
-            style={{
-              clipPath: poly,
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.09)",
-              color: "#fff",
-            }}
-          />
-          <div className="absolute bottom-3 right-3 flex items-center gap-2">
-            <span
-              className="font-mono text-[9px]"
-              style={{ color: `${ringColor}cc` }}
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 flex items-center justify-center"
+              style={{
+                clipPath: polyXs,
+                background: `${C.cyan}15`,
+                border: `1px solid ${C.cyan}40`,
+                color: C.cyan,
+              }}
             >
-              {maxLen - text.length}
-            </span>
-            <svg width="16" height="16" viewBox="0 0 36 36">
-              <circle
-                cx="18"
-                cy="18"
-                r="14"
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
                 fill="none"
-                stroke="rgba(255,255,255,0.06)"
-                strokeWidth="3"
-              />
-              <circle
-                cx="18"
-                cy="18"
-                r="14"
-                fill="none"
-                stroke={ringColor}
-                strokeWidth="3"
-                strokeDasharray={`${pct * 87.96} 87.96`}
-                strokeLinecap="round"
-                transform="rotate(-90 18 18)"
-                style={{ transition: "stroke-dasharray 0.2s, stroke 0.2s" }}
-              />
-            </svg>
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div>
+              <p
+                className="font-mono text-[8px] uppercase tracking-[0.2em]"
+                style={{ color: `${C.cyan}70` }}
+              >
+                TRANSMIT_02
+              </p>
+              <h3
+                className="text-sm font-bold uppercase tracking-tight text-white"
+                style={{ fontFamily: "'Syne', sans-serif" }}
+              >
+                Love letter
+              </h3>
+            </div>
           </div>
+          <span
+            className="font-mono text-[9px] uppercase tracking-widest"
+            style={{ color: `${C.cyan}60` }}
+          >
+            → frame
+          </span>
         </div>
-        <button
-          onClick={send}
-          disabled={!text.trim() || sending}
-          className="w-full py-3 font-mono text-xs uppercase font-bold tracking-widest transition-all disabled:opacity-40"
-          style={{
-            clipPath: polySm,
-            background: `${C.cyan}12`,
-            border: `1.5px solid ${C.cyan}`,
-            color: C.cyan,
-          }}
-          onMouseEnter={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = C.cyan;
-            b.style.color = "#07070f";
-          }}
-          onMouseLeave={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = `${C.cyan}12`;
-            b.style.color = C.cyan;
-          }}
-        >
-          {sending ? "Sending..." : "Send to frame //"}
-        </button>
+
+        <div className="p-4 flex flex-col gap-3">
+          <div className="relative">
+            <textarea
+              rows={4}
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, maxLen))}
+              placeholder="Write something for their frame..."
+              className="w-full resize-none outline-none font-mono text-xs leading-relaxed px-3 py-2.5"
+              style={{
+                clipPath: polySm,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                color: "#fff",
+              }}
+            />
+            <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
+              <span
+                className="font-mono text-[9px]"
+                style={{ color: `${ringColor}cc` }}
+              >
+                {maxLen - text.length}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke={ringColor}
+                  strokeWidth="3"
+                  strokeDasharray={`${pct * 87.96} 87.96`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 18 18)"
+                  style={{ transition: "stroke-dasharray 0.2s, stroke 0.2s" }}
+                />
+              </svg>
+            </div>
+          </div>
+          <button
+            onClick={send}
+            disabled={!text.trim() || sending}
+            className="w-full py-2.5 font-mono text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-40"
+            style={{
+              clipPath: polySm,
+              background: `${C.cyan}12`,
+              border: `1.5px solid ${C.cyan}`,
+              color: C.cyan,
+            }}
+            onMouseEnter={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = C.cyan;
+              b.style.color = "#07070f";
+            }}
+            onMouseLeave={(e) => {
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = `${C.cyan}12`;
+              b.style.color = C.cyan;
+            }}
+          >
+            {sending ? "Sending..." : "Send to frame //"}
+          </button>
+        </div>
       </div>
     </>
   );
 }
 
-function DrawTab() {
+function DrawWidget() {
   const { uploadContent } = useUser();
   const modal = useModal();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1106,124 +1242,166 @@ function DrawTab() {
   return (
     <>
       {modal.Modal}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          {(["pen", "eraser"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTool(t)}
-              className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-all"
+      <div
+        className="relative overflow-hidden"
+        style={{ clipPath: poly, border: `1px solid rgba(255,255,255,0.07)` }}
+      >
+        {/* Header bar */}
+        <div
+          className="px-4 pt-4 pb-3 flex items-center justify-between"
+          style={{
+            background: `${C.purple}08`,
+            borderBottom: `1px solid ${C.purple}20`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 flex items-center justify-center"
               style={{
                 clipPath: polyXs,
-                border: `1px solid ${tool === t ? C.purple : "rgba(255,255,255,0.1)"}`,
-                background: tool === t ? `${C.purple}20` : "transparent",
-                color: tool === t ? C.purple : "rgba(255,255,255,0.3)",
+                background: `${C.purple}15`,
+                border: `1px solid ${C.purple}40`,
+                color: C.purple,
               }}
             >
-              {t === "pen" ? "✏ Pen" : "⬜ Eraser"}
-            </button>
-          ))}
-          <div className="flex items-center gap-2 ml-2">
-            <span
-              className="font-mono text-[9px] uppercase tracking-widest"
-              style={{ color: "rgba(255,255,255,0.2)" }}
-            >
-              Size
-            </span>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <div>
+              <p
+                className="font-mono text-[8px] uppercase tracking-[0.2em]"
+                style={{ color: `${C.purple}70` }}
+              >
+                TRANSMIT_03
+              </p>
+              <h3
+                className="text-sm font-bold uppercase tracking-tight text-white"
+                style={{ fontFamily: "'Syne', sans-serif" }}
+              >
+                Draw
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {(["pen", "eraser"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTool(t)}
+                className="px-2 py-1 font-mono text-[8px] uppercase tracking-widest transition-all"
+                style={{
+                  clipPath: polyXs,
+                  border: `1px solid ${tool === t ? C.purple : "rgba(255,255,255,0.1)"}`,
+                  background: tool === t ? `${C.purple}20` : "transparent",
+                  color: tool === t ? C.purple : "rgba(255,255,255,0.3)",
+                }}
+              >
+                {t === "pen" ? "✏" : "⬜"}
+              </button>
+            ))}
             <input
               type="range"
               min={1}
               max={12}
               value={size}
               onChange={(e) => setSize(Number(e.target.value))}
-              className="w-20 accent-purple-500"
+              className="w-14 accent-purple-500"
             />
-            <span
-              className="font-mono text-[9px]"
-              style={{ color: `${C.purple}aa` }}
+            <button
+              onClick={clear}
+              className="font-mono text-[8px] uppercase px-2 py-1 transition-all"
+              style={{
+                clipPath: polyXs,
+                border: "1px solid rgba(255,42,109,0.3)",
+                background: "transparent",
+                color: "rgba(255,42,109,0.6)",
+              }}
+              onMouseEnter={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.color = C.pink;
+                b.style.borderColor = C.pink;
+              }}
+              onMouseLeave={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.color = "rgba(255,42,109,0.6)";
+                b.style.borderColor = "rgba(255,42,109,0.3)";
+              }}
             >
-              {size}px
-            </span>
+              Clear
+            </button>
           </div>
-          <button
-            onClick={clear}
-            className="ml-auto font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 transition-all"
+        </div>
+
+        <div className="px-4 pb-4 pt-3 flex flex-col gap-3">
+          <div
             style={{
-              clipPath: polyXs,
-              border: "1px solid rgba(255,42,109,0.25)",
-              background: "transparent",
-              color: "rgba(255,42,109,0.5)",
-            }}
-            onMouseEnter={(e) => {
-              const b = e.currentTarget as HTMLButtonElement;
-              b.style.color = C.pink;
-              b.style.borderColor = C.pink;
-            }}
-            onMouseLeave={(e) => {
-              const b = e.currentTarget as HTMLButtonElement;
-              b.style.color = "rgba(255,42,109,0.5)";
-              b.style.borderColor = "rgba(255,42,109,0.25)";
+              clipPath: polySm,
+              border: "1px solid rgba(255,255,255,0.1)",
+              overflow: "hidden",
+              cursor: tool === "eraser" ? "cell" : "crosshair",
             }}
           >
-            Clear
-          </button>
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={480}
+              className="w-full touch-none select-none block"
+              style={{ background: "#fff", display: "block" }}
+              onMouseDown={startDraw}
+              onMouseMove={draw}
+              onMouseUp={endDraw}
+              onMouseLeave={endDraw}
+              onTouchStart={startDraw}
+              onTouchMove={draw}
+              onTouchEnd={endDraw}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <p
+              className="font-mono text-[9px] uppercase tracking-widest"
+              style={{ color: "rgba(255,255,255,0.15)" }}
+            >
+              800×480 · B/W on frame
+            </p>
+            <button
+              onClick={send}
+              disabled={!hasStrokes || uploading}
+              className="px-5 py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all disabled:opacity-40"
+              style={{
+                clipPath: polySm,
+                background: `${C.purple}12`,
+                border: `1.5px solid ${C.purple}`,
+                color: C.purple,
+              }}
+              onMouseEnter={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.background = C.purple;
+                b.style.color = "#07070f";
+              }}
+              onMouseLeave={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.background = `${C.purple}12`;
+                b.style.color = C.purple;
+              }}
+            >
+              {uploading ? "Sending..." : "Send drawing //"}
+            </button>
+          </div>
         </div>
-        <div
-          style={{
-            clipPath: poly,
-            border: "1px solid rgba(255,255,255,0.1)",
-            overflow: "hidden",
-            cursor: tool === "eraser" ? "cell" : "crosshair",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={800}
-            height={480}
-            className="w-full touch-none select-none block"
-            style={{ background: "#fff", display: "block" }}
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={endDraw}
-            onMouseLeave={endDraw}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={endDraw}
-          />
-        </div>
-        <p
-          className="font-mono text-[9px] uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.15)" }}
-        >
-          800×480 · Rendered in black & white on the frame
-        </p>
-        <button
-          onClick={send}
-          disabled={!hasStrokes || uploading}
-          className="w-full py-3 font-mono text-xs uppercase font-bold tracking-widest transition-all disabled:opacity-40"
-          style={{
-            clipPath: polySm,
-            background: `${C.purple}12`,
-            border: `1.5px solid ${C.purple}`,
-            color: C.purple,
-          }}
-          onMouseEnter={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = C.purple;
-            b.style.color = "#07070f";
-          }}
-          onMouseLeave={(e) => {
-            const b = e.currentTarget as HTMLButtonElement;
-            b.style.background = `${C.purple}12`;
-            b.style.color = C.purple;
-          }}
-        >
-          {uploading ? "Sending..." : "Send drawing to frame //"}
-        </button>
       </div>
     </>
   );
 }
+
+// ── QUEUE PANEL ──────────────────────────────────────────────────────────────
 
 function QueuePanel() {
   const { content, user, deleteContent } = useUser();
@@ -1240,8 +1418,11 @@ function QueuePanel() {
   if (items.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center py-10 gap-2"
-        style={{ border: "1px dashed rgba(255,255,255,0.06)", clipPath: poly }}
+        className="flex flex-col items-center justify-center py-8 gap-2"
+        style={{
+          border: "1px dashed rgba(255,255,255,0.06)",
+          clipPath: polySm,
+        }}
       >
         <span
           className="font-mono text-[9px] uppercase tracking-widest"
@@ -1259,13 +1440,55 @@ function QueuePanel() {
     );
   }
 
+  const typeIcon: Record<string, React.ReactNode> = {
+    photo: (
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    ),
+    message: (
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+    drawing: (
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    ),
+  };
+
   return (
     <div
       className="flex flex-col divide-y"
       style={{
         borderColor: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.06)",
-        clipPath: poly,
+        clipPath: polySm,
       }}
     >
       {items.map((c) => {
@@ -1282,47 +1505,6 @@ function QueuePanel() {
           : isQueued
             ? "Queued"
             : "Sent";
-        const typeIcon: Record<string, React.ReactNode> = {
-          photo: (
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-          ),
-          message: (
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          ),
-          drawing: (
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-          ),
-        };
         return (
           <div
             key={c.id}
@@ -1411,86 +1593,292 @@ function QueuePanel() {
   );
 }
 
-function PartnerWidget() {
-  const { partnerUser, coupleDevices, user } = useUser();
-  if (!partnerUser) return null;
-  const partnerDevice = coupleDevices.find(
-    (d) => d.device.owner_id !== user?.id,
+// ── SCREEN MANAGER ───────────────────────────────────────────────────────────
+
+function ScreenManagerWidget({
+  screens,
+  onChange,
+}: {
+  screens: { id: string }[];
+  onChange: (screens: { id: string }[]) => void;
+}) {
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+
+  const drop = (i: number) => {
+    if (dragging === null || dragging === i) {
+      setDragging(null);
+      setOver(null);
+      return;
+    }
+    const arr = [...screens];
+    const [moved] = arr.splice(dragging, 1);
+    arr.splice(i, 0, moved);
+    onChange(arr);
+    setDragging(null);
+    setOver(null);
+  };
+
+  const toggle = (id: string) => {
+    const meta = ALL_SCREENS.find((s) => s.id === id);
+    if (meta?.locked) return;
+    if (screens.find((s) => s.id === id)) {
+      if (screens.length <= 1) return;
+      onChange(screens.filter((s) => s.id !== id));
+    } else {
+      onChange([...screens, { id }]);
+    }
+  };
+
+  const inactive = ALL_SCREENS.filter(
+    (s) => !screens.find((a) => a.id === s.id),
   );
-  const online = isOnline(partnerDevice?.device.last_seen);
 
   return (
     <div
-      className="p-4 relative"
-      style={{
-        clipPath: poly,
-        background: `${C.purple}04`,
-        border: `1px solid ${C.purple}18`,
-      }}
+      className="relative overflow-hidden"
+      style={{ clipPath: poly, border: "1px solid rgba(255,255,255,0.07)" }}
     >
+      {/* Header */}
       <div
-        className="absolute top-0 left-0 right-0 h-px"
+        className="px-5 pt-5 pb-3 flex items-center justify-between"
         style={{
-          background: `linear-gradient(90deg, transparent, ${C.purple}, transparent)`,
-          opacity: 0.5,
+          background: "rgba(255,255,255,0.02)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
-      />
-      <p
-        className="font-mono text-[8px] uppercase tracking-[0.25em] mb-3"
-        style={{ color: `${C.purple}60` }}
       >
-        Partner frame
-      </p>
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className="w-9 h-9 flex items-center justify-center flex-shrink-0 font-bold"
-          style={{
-            clipPath: polyXs,
-            background: `linear-gradient(135deg, ${C.purple}50, ${C.pink}50)`,
-            border: `1px solid ${C.purple}40`,
-            fontFamily: "'Syne', sans-serif",
-            fontSize: 14,
-          }}
-        >
-          {(partnerUser.name ?? "P")[0].toUpperCase()}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-7 h-7 flex items-center justify-center"
+            style={{
+              clipPath: polyXs,
+              background: `${C.cyan}12`,
+              border: `1px solid ${C.cyan}30`,
+              color: C.cyan,
+            }}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
+          <div>
+            <p
+              className="font-mono text-[8px] uppercase tracking-[0.2em]"
+              style={{ color: "rgba(255,255,255,0.25)" }}
+            >
+              FRAME_CONFIG
+            </p>
+            <h3
+              className="text-sm font-bold uppercase tracking-tight text-white"
+              style={{ fontFamily: "'Syne', sans-serif" }}
+            >
+              Screen Layout
+            </h3>
+          </div>
         </div>
-        <div>
-          <p className="font-mono text-xs font-bold uppercase tracking-widest text-white">
-            {partnerUser.name?.split(" ")[0]}
-          </p>
+        <div className="flex items-center gap-2">
+          <span
+            className="font-mono text-[9px] uppercase tracking-widest"
+            style={{ color: "rgba(255,255,255,0.2)" }}
+          >
+            swipe order
+          </span>
           <Pill
-            color={online ? C.cyan : "rgba(255,255,255,0.2)"}
-            text={online ? "Online" : "Offline"}
-            pulse={online}
+            color={C.cyan}
+            text={`${screens.length} screen${screens.length !== 1 ? "s" : ""}`}
           />
         </div>
       </div>
-      {partnerDevice && (
-        <div className="flex flex-col gap-1.5">
-          {[
-            { k: "Last sync", v: timeAgo(partnerDevice.device.last_seen) },
-            { k: "Firmware", v: partnerDevice.device.firmware ?? "—" },
-          ].map((row) => (
-            <div key={row.k} className="flex items-center justify-between">
-              <span
-                className="font-mono text-[9px] uppercase tracking-wider"
-                style={{ color: "rgba(255,255,255,0.2)" }}
-              >
-                {row.k}
-              </span>
-              <span
-                className="font-mono text-[9px]"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                {row.v}
-              </span>
-            </div>
-          ))}
+
+      <div className="p-5 flex flex-col gap-5">
+        {/* Active screens — drag to reorder */}
+        <div>
+          <p
+            className="font-mono text-[9px] uppercase tracking-[0.2em] mb-3"
+            style={{ color: "rgba(255,255,255,0.2)" }}
+          >
+            Active · drag to set order
+          </p>
+          <div className="flex flex-col gap-2">
+            {screens.map((s, i) => {
+              const meta = ALL_SCREENS.find((m) => m.id === s.id);
+              const isHome = i === 0;
+              const accentColor = isHome ? C.cyan : C.purple;
+              return (
+                <div
+                  key={s.id}
+                  draggable
+                  onDragStart={() => setDragging(i)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setOver(i);
+                  }}
+                  onDrop={() => drop(i)}
+                  onDragEnd={() => {
+                    setDragging(null);
+                    setOver(null);
+                  }}
+                  className="flex items-center gap-3 px-3 py-2.5 group cursor-grab transition-all"
+                  style={{
+                    clipPath: polyXs,
+                    background:
+                      over === i
+                        ? `${accentColor}10`
+                        : isHome
+                          ? `${C.cyan}06`
+                          : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${over === i ? accentColor : isHome ? `${C.cyan}25` : "rgba(255,255,255,0.07)"}`,
+                    opacity: dragging === i ? 0.3 : 1,
+                    transition: "all 0.12s",
+                  }}
+                >
+                  {/* Drag handle */}
+                  <span
+                    className="font-mono text-[11px] select-none shrink-0"
+                    style={{ color: "rgba(255,255,255,0.15)" }}
+                  >
+                    ⣿
+                  </span>
+
+                  {/* Position badge */}
+                  <div
+                    className="w-6 h-6 flex items-center justify-center shrink-0 font-mono text-[9px] font-bold"
+                    style={{
+                      clipPath: polyXs,
+                      background: `${accentColor}18`,
+                      border: `1px solid ${accentColor}40`,
+                      color: accentColor,
+                    }}
+                  >
+                    {isHome ? "⌂" : i + 1}
+                  </div>
+
+                  {/* Emoji */}
+                  <span className="text-base shrink-0">{meta?.emoji}</span>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="font-mono text-xs font-bold uppercase tracking-tight"
+                        style={{
+                          color: isHome ? C.cyan : "rgba(255,255,255,0.75)",
+                        }}
+                      >
+                        {meta?.label}
+                      </span>
+                      {meta?.locked && (
+                        <span
+                          className="font-mono text-[8px] uppercase"
+                          style={{ color: "rgba(255,255,255,0.2)" }}
+                        >
+                          [locked]
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="font-mono text-[9px]"
+                      style={{ color: "rgba(255,255,255,0.25)" }}
+                    >
+                      {meta?.desc}
+                    </span>
+                  </div>
+
+                  {/* Home/number pill */}
+                  <Pill
+                    color={isHome ? C.cyan : "rgba(255,255,255,0.15)"}
+                    text={isHome ? "Home" : `#${i + 1}`}
+                  />
+
+                  {/* Remove btn */}
+                  {!meta?.locked && (
+                    <button
+                      onClick={() => toggle(s.id)}
+                      className="w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                      style={{
+                        clipPath: polyXs,
+                        background: `${C.pink}20`,
+                        border: `1px solid ${C.pink}40`,
+                        color: C.pink,
+                      }}
+                    >
+                      <svg
+                        width="7"
+                        height="7"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )}
+
+        {/* Add inactive screens */}
+        {inactive.length > 0 && (
+          <div>
+            <p
+              className="font-mono text-[9px] uppercase tracking-[0.2em] mb-3"
+              style={{ color: "rgba(255,255,255,0.2)" }}
+            >
+              Add screens
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {inactive.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => toggle(s.id)}
+                  className="flex items-center gap-2 px-3 py-2 transition-all"
+                  style={{
+                    clipPath: polyXs,
+                    border: `1px dashed rgba(255,255,255,0.12)`,
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.3)",
+                  }}
+                  onMouseEnter={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.borderColor = C.cyan;
+                    b.style.color = C.cyan;
+                  }}
+                  onMouseLeave={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.borderColor = "rgba(255,255,255,0.12)";
+                    b.style.color = "rgba(255,255,255,0.3)";
+                  }}
+                >
+                  <span className="text-sm">{s.emoji}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest">
+                    + {s.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
+
+// ── TAMAGOTCHI WIDGET ────────────────────────────────────────────────────────
 
 function TamagotchiWidget() {
   const [cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
@@ -1498,7 +1886,6 @@ function TamagotchiWidget() {
   useEffect(() => {
     setCfg(loadTamaConfig());
   }, []);
-
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key === TAMA_STORAGE_KEY) setCfg(loadTamaConfig());
@@ -1568,8 +1955,6 @@ function TamagotchiWidget() {
             style={s}
           />
         ))}
-
-        {/* ── SPRITE: outfit + accessory merged directly into pixel grid ── */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
           style={{ animation: animCss }}
@@ -1591,7 +1976,6 @@ function TamagotchiWidget() {
             )}
           </div>
         </div>
-
         <div
           className="absolute bottom-1 left-2 font-mono leading-none z-30"
           style={{ fontSize: "0.45rem", color: `${C.cyan}70` }}
@@ -1602,10 +1986,9 @@ function TamagotchiWidget() {
           className="absolute top-1.5 right-2 font-mono leading-none z-30"
           style={{ fontSize: "0.42rem", color: `${C.purple}80` }}
         >
-          {ANIM_CSS[cfg.animation] ? cfg.animation.toUpperCase() : "IDLE"}
+          {cfg.animation.toUpperCase()}
         </div>
       </div>
-
       <div
         className="px-3 py-2.5"
         style={{
@@ -1718,7 +2101,6 @@ function TamagotchiWidget() {
           ↺ Partner content keeps them alive
         </p>
       </div>
-
       <style>{`
         @keyframes tamaBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
         @keyframes tamaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14%)}}
@@ -1733,67 +2115,24 @@ function TamagotchiWidget() {
   );
 }
 
-function MyFrameWidget() {
-  const { device } = useUser();
-  const online = isOnline(device?.last_seen);
-  return (
-    <div
-      className="p-4 relative"
-      style={{
-        clipPath: polySm,
-        background: `${C.cyan}03`,
-        border: `1px solid ${C.cyan}14`,
-      }}
-    >
-      <p
-        className="font-mono text-[8px] uppercase tracking-[0.25em] mb-3"
-        style={{ color: `${C.cyan}60` }}
-      >
-        Your frame
-      </p>
-      <div className="flex flex-col gap-1.5">
-        {[
-          {
-            k: "Status",
-            v: online ? "Online" : "Offline",
-            vc: online ? C.cyan : "rgba(255,255,255,0.3)",
-          },
-          {
-            k: "MAC",
-            v: device?.mac_address ?? "—",
-            vc: "rgba(255,255,255,0.45)",
-          },
-          {
-            k: "Last ping",
-            v: timeAgo(device?.last_seen),
-            vc: "rgba(255,255,255,0.45)",
-          },
-          {
-            k: "Firmware",
-            v: device?.firmware ?? "—",
-            vc: "rgba(255,255,255,0.45)",
-          },
-        ].map((row) => (
-          <div key={row.k} className="flex items-center justify-between">
-            <span
-              className="font-mono text-[9px] uppercase tracking-wider"
-              style={{ color: "rgba(255,255,255,0.2)" }}
-            >
-              {row.k}
-            </span>
-            <span className="font-mono text-[9px]" style={{ color: row.vc }}>
-              {row.v}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// ── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { couple, device, isLoading, error, refetch } = useUser();
-  const [activeTab, setActiveTab] = useState<ActionTab>("photo");
+  const [screens, setScreens] = useState(DEFAULT_SCREENS);
+
+  useEffect(() => {
+    setScreens(loadScreens());
+  }, []);
+
+  function handleScreensChange(next: { id: string }[]) {
+    setScreens(next);
+    try {
+      localStorage.setItem(SCREENS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* noop */
+    }
+  }
 
   useEffect(() => {
     if (!couple || couple.status === "active") return;
@@ -1839,12 +2178,6 @@ export default function DashboardPage() {
   const couplePending = couple?.status === "pending";
   const noCouple = !couple;
   const setupNeeded = !device || noCouple || couplePending;
-
-  const TABS: { id: ActionTab; label: string; color: string }[] = [
-    { id: "photo", label: "Photo", color: C.pink },
-    { id: "love_letter", label: "Love letter", color: C.cyan },
-    { id: "draw", label: "Draw", color: C.purple },
-  ];
 
   return (
     <AppLayout>
@@ -1902,70 +2235,28 @@ export default function DashboardPage() {
             <div className="mb-6">
               <FrameStatusBar />
             </div>
+
             <div
-              className="grid gap-6"
-              style={{ gridTemplateColumns: "1fr 260px" }}
+              className="grid gap-5"
+              style={{ gridTemplateColumns: "1fr 1fr 280px" }}
             >
-              <div className="flex flex-col gap-6 min-w-0">
-                <section>
-                  <div
-                    className="flex gap-0 mb-0"
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-                  >
-                    {TABS.map((tab) => {
-                      const active = activeTab === tab.id;
-                      return (
-                        <button
-                          key={tab.id}
-                          onClick={() => setActiveTab(tab.id)}
-                          className="px-5 py-3 font-mono text-[10px] uppercase tracking-widest font-bold transition-all relative"
-                          style={{
-                            color: active ? tab.color : "rgba(255,255,255,0.3)",
-                            background: active
-                              ? `${tab.color}08`
-                              : "transparent",
-                          }}
-                        >
-                          {tab.label}
-                          {active && (
-                            <span
-                              className="absolute bottom-0 left-0 right-0 h-0.5"
-                              style={{
-                                background: tab.color,
-                                boxShadow: `0 0 6px ${tab.color}`,
-                              }}
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="pt-5">
-                    {activeTab === "photo" && <PhotoTab />}
-                    {activeTab === "message" && <MessageTab />}
-                    {activeTab === "draw" && <DrawTab />}
-                  </div>
-                </section>
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className="w-1.5 h-1.5 flex-shrink-0"
-                      style={{ background: "rgba(255,255,255,0.2)" }}
-                    />
-                    <span
-                      className="font-mono text-[9px] uppercase tracking-[0.25em]"
-                      style={{ color: "rgba(255,255,255,0.2)" }}
-                    >
-                      Frame queue
-                    </span>
-                  </div>
-                  <QueuePanel />
-                </section>
+              <div className="flex flex-col gap-5">
+                <PhotoWidget />
+                <ScreenManagerWidget
+                  screens={screens}
+                  onChange={handleScreensChange}
+                />
               </div>
+
+              {/* COL 2 — Message + Draw + Screen Manager */}
+              <div className="flex flex-col gap-5">
+                <MessageWidget />
+                <DrawWidget />
+              </div>
+
+              {/* COL 3 — Tamagotchi sidebar */}
               <div className="flex flex-col gap-4">
-                {/* <PartnerWidget /> */}
                 <TamagotchiWidget />
-                {/* <MyFrameWidget /> */}
               </div>
             </div>
           </>

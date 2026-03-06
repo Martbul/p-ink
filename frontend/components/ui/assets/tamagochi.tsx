@@ -840,7 +840,6 @@ export default function TamagotchiAssets() {
             </div>
           </div>
 
-          {/* Background previews */}
           <div>
             <p style={{ fontSize: 8, letterSpacing: "0.3em", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 10 }}>▸ Background environments</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -856,7 +855,6 @@ export default function TamagotchiAssets() {
           </div>
         </div>
 
-        {/* RIGHT: Interactive companion card */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ padding: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", clipPath: "polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)" }}>
             <div style={{ fontSize: 8, letterSpacing: "0.3em", color: `${charColor}80`, textTransform: "uppercase", marginBottom: 10 }}>▸ your companion</div>
