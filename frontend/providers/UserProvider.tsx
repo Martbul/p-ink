@@ -16,7 +16,7 @@ import type {
   FrameState,
   Content,
 } from "@/types/api";
-import { api } from "@/api";
+import { api } from "@/api/api";
 
 interface UserContextValue {
   user: User | null;

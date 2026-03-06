@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Spinner } from "@/components/ui";
 import { useUser } from "@/providers/UserProvider";
+import { useTamagotchi } from "@/providers/TamagotchiProvider";
 import { useModal, ModalPresets } from "@/components/ui/info_modal";
-import { api } from "@/api";
+import { api } from "@/api/api";
 import { cn } from "@/lib/utils";
 import { AnimatedSprite, PixelBg } from "@/components/ui/tamagochi/backgrounds";
 import { CHAR_REGISTRY } from "@/components/ui/tamagochi/sprites";
@@ -38,31 +39,6 @@ const ANIM_CSS: Record<string, string> = {
   excited: "tamaHyper 0.28s ease-in-out infinite",
   float: "tamaFloat 3.2s ease-in-out infinite",
 };
-
-const DEFAULT_TAMA_CONFIG = {
-  species: "cat",
-  background: "cyber",
-  outfit: "none",
-  accessory: "none",
-  animation: "idle",
-  position: "center",
-};
-
-const TAMA_STORAGE_KEY = "tama_config";
-
-function loadTamaConfig() {
-  if (typeof window === "undefined") return DEFAULT_TAMA_CONFIG;
-  try {
-    const raw = localStorage.getItem(TAMA_STORAGE_KEY);
-    return raw
-      ? { ...DEFAULT_TAMA_CONFIG, ...JSON.parse(raw) }
-      : DEFAULT_TAMA_CONFIG;
-  } catch {
-    return DEFAULT_TAMA_CONFIG;
-  }
-}
-
-const SCREENS_STORAGE_KEY = "dashboard_screens";
 
 const ALL_SCREENS = [
   {
@@ -101,23 +77,6 @@ const ALL_SCREENS = [
     desc: "Recent message thread",
   },
 ];
-
-const DEFAULT_SCREENS = [
-  { id: "tamagotchi" },
-  { id: "photo-replay" },
-  { id: "photo-slideshow" },
-  { id: "custom-screen" },
-];
-
-function loadScreens() {
-  if (typeof window === "undefined") return DEFAULT_SCREENS;
-  try {
-    const raw = localStorage.getItem(SCREENS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : DEFAULT_SCREENS;
-  } catch {
-    return DEFAULT_SCREENS;
-  }
-}
 
 function isOnline(lastSeen?: string | null) {
   if (!lastSeen) return false;
@@ -163,6 +122,8 @@ function Pill({
     </span>
   );
 }
+
+// ─── Setup widgets ────────────────────────────────────────────────────────────
 
 function PairFrameSetup({ onPaired }: { onPaired: () => void }) {
   const { pairDevice } = useUser();
@@ -599,6 +560,8 @@ function PartnerSetup({ onLinked }: { onLinked: () => void }) {
   );
 }
 
+// ─── Status bar ───────────────────────────────────────────────────────────────
+
 function FrameStatusBar() {
   const { device, partnerUser, content } = useUser();
   const online = isOnline(device?.last_seen);
@@ -682,7 +645,7 @@ function FrameStatusBar() {
   );
 }
 
-// ── SEND ACTION WIDGETS ──────────────────────────────────────────────────────
+// ─── Send widgets ─────────────────────────────────────────────────────────────
 
 function PhotoWidget() {
   const { uploadContent } = useUser();
@@ -734,7 +697,6 @@ function PhotoWidget() {
         className="relative overflow-hidden"
         style={{ clipPath: poly, border: `1px solid rgba(255,255,255,0.07)` }}
       >
-        {/* Header bar */}
         <div
           className="px-4 pt-4 pb-3 flex items-center justify-between"
           style={{
@@ -787,7 +749,6 @@ function PhotoWidget() {
             → frame
           </span>
         </div>
-
         <div className="p-4 flex flex-col gap-3">
           {preview ? (
             <>
@@ -1006,7 +967,6 @@ function MessageWidget() {
           border: `1px solid rgba(255,255,255,0.07)`,
         }}
       >
-        {/* Header bar */}
         <div
           className="px-4 pt-4 pb-3 flex items-center justify-between"
           style={{
@@ -1057,7 +1017,6 @@ function MessageWidget() {
             → frame
           </span>
         </div>
-
         <div className="p-4 flex flex-col gap-3">
           <div className="relative">
             <textarea
@@ -1170,12 +1129,10 @@ function DrawWidget() {
       y: (e.clientY - rect.top) * scaleY,
     };
   }
-
   function startDraw(e: React.MouseEvent | React.TouchEvent) {
     drawing.current = true;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    lastPos.current = getPos(e, canvas);
+    const c = canvasRef.current;
+    if (c) lastPos.current = getPos(e, c);
   }
   function draw(e: React.MouseEvent | React.TouchEvent) {
     if (!drawing.current) return;
@@ -1200,12 +1157,12 @@ function DrawWidget() {
     lastPos.current = null;
   }
   function clear() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
     if (!ctx) return;
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, c.width, c.height);
     setHasStrokes(false);
   }
 
@@ -1246,7 +1203,6 @@ function DrawWidget() {
         className="relative overflow-hidden"
         style={{ clipPath: poly, border: `1px solid rgba(255,255,255,0.07)` }}
       >
-        {/* Header bar */}
         <div
           className="px-4 pt-4 pb-3 flex items-center justify-between"
           style={{
@@ -1339,7 +1295,6 @@ function DrawWidget() {
             </button>
           </div>
         </div>
-
         <div className="px-4 pb-4 pt-3 flex flex-col gap-3">
           <div
             style={{
@@ -1401,43 +1356,17 @@ function DrawWidget() {
   );
 }
 
-// ── QUEUE PANEL ──────────────────────────────────────────────────────────────
+// ─── Queue panel ──────────────────────────────────────────────────────────────
 
 function QueuePanel() {
   const { content, user, deleteContent } = useUser();
   const items = content.filter((c) => c.status !== "archived");
-
   async function del(id: string) {
     try {
       await deleteContent(id);
     } catch {
       /* non-fatal */
     }
-  }
-
-  if (items.length === 0) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center py-8 gap-2"
-        style={{
-          border: "1px dashed rgba(255,255,255,0.06)",
-          clipPath: polySm,
-        }}
-      >
-        <span
-          className="font-mono text-[9px] uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.12)" }}
-        >
-          Nothing queued
-        </span>
-        <span
-          className="font-mono text-[8px] uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.07)" }}
-        >
-          Send a photo, message, or drawing above
-        </span>
-      </div>
-    );
   }
 
   const typeIcon: Record<string, React.ReactNode> = {
@@ -1481,6 +1410,31 @@ function QueuePanel() {
       </svg>
     ),
   };
+
+  if (items.length === 0) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center py-8 gap-2"
+        style={{
+          border: "1px dashed rgba(255,255,255,0.06)",
+          clipPath: polySm,
+        }}
+      >
+        <span
+          className="font-mono text-[9px] uppercase tracking-widest"
+          style={{ color: "rgba(255,255,255,0.12)" }}
+        >
+          Nothing queued
+        </span>
+        <span
+          className="font-mono text-[8px] uppercase tracking-widest"
+          style={{ color: "rgba(255,255,255,0.07)" }}
+        >
+          Send a photo, message, or drawing above
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1593,15 +1547,9 @@ function QueuePanel() {
   );
 }
 
-// ── SCREEN MANAGER ───────────────────────────────────────────────────────────
 
-function ScreenManagerWidget({
-  screens,
-  onChange,
-}: {
-  screens: { id: string }[];
-  onChange: (screens: { id: string }[]) => void;
-}) {
+function ScreenManagerWidget() {
+  const { screens, setScreens } = useTamagotchi();
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
 
@@ -1614,7 +1562,7 @@ function ScreenManagerWidget({
     const arr = [...screens];
     const [moved] = arr.splice(dragging, 1);
     arr.splice(i, 0, moved);
-    onChange(arr);
+    setScreens(arr);
     setDragging(null);
     setOver(null);
   };
@@ -1624,9 +1572,9 @@ function ScreenManagerWidget({
     if (meta?.locked) return;
     if (screens.find((s) => s.id === id)) {
       if (screens.length <= 1) return;
-      onChange(screens.filter((s) => s.id !== id));
+      setScreens(screens.filter((s) => s.id !== id));
     } else {
-      onChange([...screens, { id }]);
+      setScreens([...screens, { id }]);
     }
   };
 
@@ -1639,7 +1587,6 @@ function ScreenManagerWidget({
       className="relative overflow-hidden"
       style={{ clipPath: poly, border: "1px solid rgba(255,255,255,0.07)" }}
     >
-      {/* Header */}
       <div
         className="px-5 pt-5 pb-3 flex items-center justify-between"
         style={{
@@ -1698,9 +1645,7 @@ function ScreenManagerWidget({
           />
         </div>
       </div>
-
       <div className="p-5 flex flex-col gap-5">
-        {/* Active screens — drag to reorder */}
         <div>
           <p
             className="font-mono text-[9px] uppercase tracking-[0.2em] mb-3"
@@ -1712,7 +1657,7 @@ function ScreenManagerWidget({
             {screens.map((s, i) => {
               const meta = ALL_SCREENS.find((m) => m.id === s.id);
               const isHome = i === 0;
-              const accentColor = isHome ? C.cyan : C.purple;
+              const accent = isHome ? C.cyan : C.purple;
               return (
                 <div
                   key={s.id}
@@ -1732,40 +1677,32 @@ function ScreenManagerWidget({
                     clipPath: polyXs,
                     background:
                       over === i
-                        ? `${accentColor}10`
+                        ? `${accent}10`
                         : isHome
                           ? `${C.cyan}06`
                           : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${over === i ? accentColor : isHome ? `${C.cyan}25` : "rgba(255,255,255,0.07)"}`,
+                    border: `1px solid ${over === i ? accent : isHome ? `${C.cyan}25` : "rgba(255,255,255,0.07)"}`,
                     opacity: dragging === i ? 0.3 : 1,
-                    transition: "all 0.12s",
                   }}
                 >
-                  {/* Drag handle */}
                   <span
                     className="font-mono text-[11px] select-none shrink-0"
                     style={{ color: "rgba(255,255,255,0.15)" }}
                   >
                     ⣿
                   </span>
-
-                  {/* Position badge */}
                   <div
                     className="w-6 h-6 flex items-center justify-center shrink-0 font-mono text-[9px] font-bold"
                     style={{
                       clipPath: polyXs,
-                      background: `${accentColor}18`,
-                      border: `1px solid ${accentColor}40`,
-                      color: accentColor,
+                      background: `${accent}18`,
+                      border: `1px solid ${accent}40`,
+                      color: accent,
                     }}
                   >
                     {isHome ? "⌂" : i + 1}
                   </div>
-
-                  {/* Emoji */}
                   <span className="text-base shrink-0">{meta?.emoji}</span>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span
@@ -1792,14 +1729,10 @@ function ScreenManagerWidget({
                       {meta?.desc}
                     </span>
                   </div>
-
-                  {/* Home/number pill */}
                   <Pill
                     color={isHome ? C.cyan : "rgba(255,255,255,0.15)"}
                     text={isHome ? "Home" : `#${i + 1}`}
                   />
-
-                  {/* Remove btn */}
                   {!meta?.locked && (
                     <button
                       onClick={() => toggle(s.id)}
@@ -1830,8 +1763,6 @@ function ScreenManagerWidget({
             })}
           </div>
         </div>
-
-        {/* Add inactive screens */}
         {inactive.length > 0 && (
           <div>
             <p
@@ -1872,30 +1803,16 @@ function ScreenManagerWidget({
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
 }
 
-// ── TAMAGOTCHI WIDGET ────────────────────────────────────────────────────────
 
 function TamagotchiWidget() {
-  const [cfg, setCfg] = useState(DEFAULT_TAMA_CONFIG);
-
-  useEffect(() => {
-    setCfg(loadTamaConfig());
-  }, []);
-  useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key === TAMA_STORAGE_KEY) setCfg(loadTamaConfig());
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  const charReg = CHAR_REGISTRY[cfg.species];
-  const animCss = ANIM_CSS[cfg.animation] ?? ANIM_CSS.idle;
+  const { config } = useTamagotchi();
+  const charReg = CHAR_REGISTRY[config.species];
+  const animCss = ANIM_CSS[config.animation] ?? ANIM_CSS.idle;
 
   return (
     <div
@@ -1907,7 +1824,7 @@ function TamagotchiWidget() {
         style={{ aspectRatio: "800/480", background: "#060610" }}
       >
         <div className="absolute inset-0">
-          <PixelBg type={cfg.background} scale={5} fillParent />
+          <PixelBg type={config.background} scale={5} fillParent />
         </div>
         <div
           className="absolute inset-0 pointer-events-none z-10"
@@ -1923,32 +1840,34 @@ function TamagotchiWidget() {
               "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.6) 100%)",
           }}
         />
-        {[
-          {
-            top: 4,
-            left: 4,
-            borderTop: `1px solid ${C.cyan}50`,
-            borderLeft: `1px solid ${C.cyan}50`,
-          },
-          {
-            top: 4,
-            right: 4,
-            borderTop: `1px solid ${C.cyan}50`,
-            borderRight: `1px solid ${C.cyan}50`,
-          },
-          {
-            bottom: 4,
-            left: 4,
-            borderBottom: `1px solid ${C.cyan}50`,
-            borderLeft: `1px solid ${C.cyan}50`,
-          },
-          {
-            bottom: 4,
-            right: 4,
-            borderBottom: `1px solid ${C.cyan}50`,
-            borderRight: `1px solid ${C.cyan}50`,
-          },
-        ].map((s, i) => (
+        {(
+          [
+            {
+              top: 4,
+              left: 4,
+              borderTop: `1px solid ${C.cyan}50`,
+              borderLeft: `1px solid ${C.cyan}50`,
+            },
+            {
+              top: 4,
+              right: 4,
+              borderTop: `1px solid ${C.cyan}50`,
+              borderRight: `1px solid ${C.cyan}50`,
+            },
+            {
+              bottom: 4,
+              left: 4,
+              borderBottom: `1px solid ${C.cyan}50`,
+              borderLeft: `1px solid ${C.cyan}50`,
+            },
+            {
+              bottom: 4,
+              right: 4,
+              borderBottom: `1px solid ${C.cyan}50`,
+              borderRight: `1px solid ${C.cyan}50`,
+            },
+          ] as React.CSSProperties[]
+        ).map((s, i) => (
           <div
             key={i}
             className="absolute w-2.5 h-2.5 pointer-events-none z-20"
@@ -1966,12 +1885,12 @@ function TamagotchiWidget() {
                 palette={charReg.palette}
                 scale={5}
                 fps={3}
-                outfit={cfg.outfit}
-                accessory={cfg.accessory}
+                outfit={config.outfit}
+                accessory={config.accessory}
               />
             ) : (
               <span style={{ fontSize: "1.5rem", color: C.cyan }}>
-                {cfg.species}
+                {config.species}
               </span>
             )}
           </div>
@@ -1986,7 +1905,7 @@ function TamagotchiWidget() {
           className="absolute top-1.5 right-2 font-mono leading-none z-30"
           style={{ fontSize: "0.42rem", color: `${C.purple}80` }}
         >
-          {cfg.animation.toUpperCase()}
+          {config.animation.toUpperCase()}
         </div>
       </div>
       <div
@@ -2012,7 +1931,7 @@ function TamagotchiWidget() {
                 color: "rgba(255,255,255,0.75)",
               }}
             >
-              {charReg ? charReg.name : cfg.species} · {cfg.animation}
+              {charReg ? charReg.name : config.species} · {config.animation}
             </p>
           </div>
           <Link
@@ -2115,25 +2034,12 @@ function TamagotchiWidget() {
   );
 }
 
-// ── MAIN PAGE ────────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { couple, device, isLoading, error, refetch } = useUser();
-  const [screens, setScreens] = useState(DEFAULT_SCREENS);
 
-  useEffect(() => {
-    setScreens(loadScreens());
-  }, []);
-
-  function handleScreensChange(next: { id: string }[]) {
-    setScreens(next);
-    try {
-      localStorage.setItem(SCREENS_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* noop */
-    }
-  }
-
+  // Poll for couple activation if pending
   useEffect(() => {
     if (!couple || couple.status === "active") return;
     const id = setInterval(() => refetch(), 5000);
@@ -2235,28 +2141,24 @@ export default function DashboardPage() {
             <div className="mb-6">
               <FrameStatusBar />
             </div>
-
             <div
               className="grid gap-5"
               style={{ gridTemplateColumns: "1fr 1fr 280px" }}
             >
+              {/* COL 1 — Photo + Screen Manager */}
               <div className="flex flex-col gap-5">
                 <PhotoWidget />
-                <ScreenManagerWidget
-                  screens={screens}
-                  onChange={handleScreensChange}
-                />
+                <ScreenManagerWidget />
               </div>
-
-              {/* COL 2 — Message + Draw + Screen Manager */}
+              {/* COL 2 — Message + Draw */}
               <div className="flex flex-col gap-5">
                 <MessageWidget />
                 <DrawWidget />
               </div>
-
-              {/* COL 3 — Tamagotchi sidebar */}
+              {/* COL 3 — Tamagotchi sidebar + Queue */}
               <div className="flex flex-col gap-4">
                 <TamagotchiWidget />
+                <QueuePanel />
               </div>
             </div>
           </>

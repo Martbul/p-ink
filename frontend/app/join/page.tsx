@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { useUser } from "@/providers/UserProvider";
-import { api, ApiError } from "@/api";
+import { api, ApiError } from "@/api/api";
 import type { InviteInfoResponse } from "@/types/api";
 import { Button, Spinner } from "@/components/ui";
 

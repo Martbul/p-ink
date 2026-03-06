@@ -3,7 +3,9 @@
 import { AnimatedSprite, PixelBg } from "@/components/ui/tamagochi/backgrounds";
 import { CHAR_REGISTRY } from "@/components/ui/tamagochi/sprites";
 import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useTamagotchi } from "@/providers/TamagotchiProvider";
+
 
 const C = {
   cyan: "#05d9e8",
@@ -22,6 +24,7 @@ const clip = {
   md: "polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0% 100%,0% 10px)",
   sm: "polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px)",
 };
+
 
 const SPECIES = [
   {
@@ -230,6 +233,7 @@ const SECTION_TABS = [
   { id: "screens", label: "Screens" },
 ];
 
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -312,11 +316,24 @@ function Card({
   );
 }
 
-function FramePreview({ cfg }: { cfg: any }) {
+
+function FramePreview({
+  cfg,
+}: {
+  cfg: ReturnType<typeof useTamagotchi>["config"];
+}) {
+  const { myState } = useTamagotchi();
+  const tama = myState?.tamagotchi;
+
   const charReg = CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
   const anim = ANIMATIONS.find((a) => a.id === cfg.animation) ?? ANIMATIONS[0];
   const pos = POS_CSS[cfg.position] ?? POS_CSS.center;
   const frames = charReg[anim.mood as keyof typeof charReg] ?? charReg.idle;
+
+  const hp = tama ? Math.round((tama.health / tama.max_health) * 100) : 87;
+  const xpPct = tama ? Math.round(tama.xp % 200) : 64; // rough within-level XP
+  const level = tama?.level ?? 7;
+  const mood = tama?.mood ?? "happy";
 
   return (
     <div
@@ -351,38 +368,38 @@ function FramePreview({ cfg }: { cfg: any }) {
             "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.5) 100%)",
         }}
       />
-
-      {/* Corner brackets */}
-      {[
+      {(
         [
-          { top: 7, left: 7 },
-          {
-            borderTop: `2px solid ${C.cyan}55`,
-            borderLeft: `2px solid ${C.cyan}55`,
-          },
-        ],
-        [
-          { top: 7, right: 7 },
-          {
-            borderTop: `2px solid ${C.cyan}55`,
-            borderRight: `2px solid ${C.cyan}55`,
-          },
-        ],
-        [
-          { bottom: 7, left: 7 },
-          {
-            borderBottom: `2px solid ${C.cyan}55`,
-            borderLeft: `2px solid ${C.cyan}55`,
-          },
-        ],
-        [
-          { bottom: 7, right: 7 },
-          {
-            borderBottom: `2px solid ${C.cyan}55`,
-            borderRight: `2px solid ${C.cyan}55`,
-          },
-        ],
-      ].map(([p, b], i) => (
+          [
+            { top: 7, left: 7 },
+            {
+              borderTop: `2px solid ${C.cyan}55`,
+              borderLeft: `2px solid ${C.cyan}55`,
+            },
+          ],
+          [
+            { top: 7, right: 7 },
+            {
+              borderTop: `2px solid ${C.cyan}55`,
+              borderRight: `2px solid ${C.cyan}55`,
+            },
+          ],
+          [
+            { bottom: 7, left: 7 },
+            {
+              borderBottom: `2px solid ${C.cyan}55`,
+              borderLeft: `2px solid ${C.cyan}55`,
+            },
+          ],
+          [
+            { bottom: 7, right: 7 },
+            {
+              borderBottom: `2px solid ${C.cyan}55`,
+              borderRight: `2px solid ${C.cyan}55`,
+            },
+          ],
+        ] as [React.CSSProperties, React.CSSProperties][]
+      ).map(([p, b], i) => (
         <div
           key={i}
           style={{
@@ -395,7 +412,6 @@ function FramePreview({ cfg }: { cfg: any }) {
           }}
         />
       ))}
-
       <div
         style={{
           position: "absolute",
@@ -420,8 +436,7 @@ function FramePreview({ cfg }: { cfg: any }) {
           />
         </div>
       </div>
-
-        <div
+      <div
         style={{
           position: "absolute",
           bottom: 166,
@@ -434,9 +449,9 @@ function FramePreview({ cfg }: { cfg: any }) {
           gap: "0.5rem",
         }}
       >
-        <span>❤ 87</span>
-        <span>⚡ 64</span>
-        <span>🎮 92</span>
+        <span>❤ {hp}</span>
+        <span>⚡ {xpPct}</span>
+        <span>😊 {mood}</span>
       </div>
       <div
         style={{
@@ -449,7 +464,7 @@ function FramePreview({ cfg }: { cfg: any }) {
           color: `${C.cyan}75`,
         }}
       >
-        LVL 7
+        LVL {level}
       </div>
       <div
         style={{
@@ -469,13 +484,10 @@ function FramePreview({ cfg }: { cfg: any }) {
   );
 }
 
-function ScreenReorder({
-  screens,
-  onChange,
-}: {
-  screens: any[];
-  onChange: (screens: any[]) => void;
-}) {
+// ─── Screen reorder (reads TamagotchiProvider) ────────────────────────────────
+
+function ScreenReorder() {
+  const { screens, setScreens } = useTamagotchi();
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
 
@@ -488,7 +500,7 @@ function ScreenReorder({
     const arr = [...screens];
     const [moved] = arr.splice(dragging, 1);
     arr.splice(i, 0, moved);
-    onChange(arr);
+    setScreens(arr);
     setDragging(null);
     setOver(null);
   };
@@ -498,9 +510,9 @@ function ScreenReorder({
     if (meta?.locked) return;
     if (screens.find((s) => s.id === id)) {
       if (screens.length <= 1) return;
-      onChange(screens.filter((s) => s.id !== id));
+      setScreens(screens.filter((s) => s.id !== id));
     } else {
-      onChange([...screens, { id }]);
+      setScreens([...screens, { id }]);
     }
   };
 
@@ -698,12 +710,14 @@ function ScreenReorder({
   );
 }
 
+// ─── Position grid ────────────────────────────────────────────────────────────
+
 function PositionGrid({
   value,
   onChange,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (v: string) => void;
 }) {
   return (
     <div
@@ -750,39 +764,29 @@ function PositionGrid({
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function TamagotchiPage() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [cfg, setCfg] = useState({
-    species: "specter",
-    background: "night_city",
-    outfit: "none",
-    accessory: "none",
-    animation: "idle",
-    position: "center",
-  });
+  const [saving, setSaving] = useState(false);
 
+  // All config comes from the shared provider — no local state duplication
+  const { config, setConfig, saveConfig } = useTamagotchi();
 
-  const [screens, setScreens] = useState([
-    { id: "tamagotchi" },
-    { id: "photo-replay" },
-    { id: "photo-slideshow" },
-    { id: "custom-screen" },
-  ]);
+  const set = (k: keyof typeof config) => (v: string) => setConfig({ [k]: v });
 
-  const set = useCallback(
-    (k: string) => (v: any) => setCfg((c) => ({ ...c, [k]: v })),
-    [],
-  );
-
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      localStorage.setItem("tama_config", JSON.stringify(cfg));
-    } catch {}
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2800);
-    router.push("/dashboard");
+      await saveConfig();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2800);
+      router.push("/dashboard");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -813,6 +817,7 @@ export default function TamagotchiPage() {
         @keyframes kfGlow{0%,100%{box-shadow:0 0 8px #05d9e830}50%{box-shadow:0 0 24px #05d9e860}}
       `}</style>
 
+      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -858,6 +863,7 @@ export default function TamagotchiPage() {
           )}
           <button
             onClick={handleSave}
+            disabled={saving}
             style={{
               padding: "0.55rem 1.35rem",
               background: `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`,
@@ -865,25 +871,29 @@ export default function TamagotchiPage() {
               color: C.cyan,
               fontSize: "0.78rem",
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: saving ? "wait" : "pointer",
               clipPath: clip.md,
               letterSpacing: "0.06em",
               outline: "none",
-              animation: "kfGlow 2.5s ease-in-out infinite",
+              animation: saving ? "none" : "kfGlow 2.5s ease-in-out infinite",
               transition: "background 0.15s",
+              opacity: saving ? 0.6 : 1,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}35,${C.purple}35)`)
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`)
-            }
+            onMouseEnter={(e) => {
+              if (!saving)
+                e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}35,${C.purple}35)`;
+            }}
+            onMouseLeave={(e) => {
+              if (!saving)
+                e.currentTarget.style.background = `linear-gradient(135deg,${C.cyan}22,${C.purple}22)`;
+            }}
           >
-            Push to Frame →
+            {saving ? "Saving…" : "Push to Frame →"}
           </button>
         </div>
       </div>
 
+      {/* Main grid */}
       <div
         style={{
           display: "grid",
@@ -895,7 +905,7 @@ export default function TamagotchiPage() {
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
         >
-          {/* Section tabs */}
+          {/* Tabs */}
           <div style={{ display: "flex", gap: "0.28rem", flexWrap: "wrap" }}>
             {SECTION_TABS.map((t, i) => {
               const active = i === tab;
@@ -927,6 +937,7 @@ export default function TamagotchiPage() {
           </div>
 
           <Card style={{ animation: "kfFadeUp 0.18s ease", minHeight: 300 }}>
+            {/* SPECIES */}
             {tab === 0 && (
               <>
                 <Label>Choose your companion species</Label>
@@ -941,7 +952,7 @@ export default function TamagotchiPage() {
                     const reg = item.pixelId
                       ? CHAR_REGISTRY[item.pixelId]
                       : null;
-                    const sel = cfg.species === item.id;
+                    const sel = config.species === item.id;
                     const accentCol = reg?.color ?? C.muted;
                     return (
                       <button
@@ -993,8 +1004,8 @@ export default function TamagotchiPage() {
                               palette={reg.palette}
                               scale={3}
                               fps={2}
-                              outfit={cfg.outfit}
-                              accessory={cfg.accessory}
+                              outfit={config.outfit}
+                              accessory={config.accessory}
                             />
                           </div>
                         ) : (
@@ -1056,6 +1067,7 @@ export default function TamagotchiPage() {
               </>
             )}
 
+            {/* BACKGROUND */}
             {tab === 1 && (
               <>
                 <Label>Frame background environment</Label>
@@ -1067,7 +1079,7 @@ export default function TamagotchiPage() {
                   }}
                 >
                   {BACKGROUNDS.map((item) => {
-                    const sel = cfg.background === item.id;
+                    const sel = config.background === item.id;
                     return (
                       <button
                         key={item.id}
@@ -1126,6 +1138,7 @@ export default function TamagotchiPage() {
               </>
             )}
 
+            {/* OUTFIT */}
             {tab === 2 && (
               <>
                 <Label>Dress your companion</Label>
@@ -1137,9 +1150,9 @@ export default function TamagotchiPage() {
                   }}
                 >
                   {OUTFITS.map((item) => {
-                    const sel = cfg.outfit === item.id;
+                    const sel = config.outfit === item.id;
                     const charReg =
-                      CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
+                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
                     return (
                       <button
                         key={item.id}
@@ -1184,7 +1197,7 @@ export default function TamagotchiPage() {
                             scale={3}
                             fps={2}
                             outfit={item.id}
-                            accessory={cfg.accessory}
+                            accessory={config.accessory}
                           />
                         </div>
                         <span
@@ -1204,6 +1217,7 @@ export default function TamagotchiPage() {
               </>
             )}
 
+            {/* ACCESSORY */}
             {tab === 3 && (
               <>
                 <Label>Equip an accessory</Label>
@@ -1215,9 +1229,9 @@ export default function TamagotchiPage() {
                   }}
                 >
                   {ACCESSORIES.map((item) => {
-                    const sel = cfg.accessory === item.id;
+                    const sel = config.accessory === item.id;
                     const charReg =
-                      CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
+                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
                     return (
                       <button
                         key={item.id}
@@ -1249,7 +1263,6 @@ export default function TamagotchiPage() {
                           }
                         }}
                       >
-                        {/* Live pixel preview with this accessory applied */}
                         <div
                           style={{
                             filter: sel
@@ -1262,7 +1275,7 @@ export default function TamagotchiPage() {
                             palette={charReg.palette}
                             scale={3}
                             fps={2}
-                            outfit={cfg.outfit}
+                            outfit={config.outfit}
                             accessory={item.id}
                           />
                         </div>
@@ -1295,9 +1308,9 @@ export default function TamagotchiPage() {
                   }}
                 >
                   {ANIMATIONS.map((a) => {
-                    const sel = cfg.animation === a.id;
+                    const sel = config.animation === a.id;
                     const charReg =
-                      CHAR_REGISTRY[cfg.species] ?? CHAR_REGISTRY.specter;
+                      CHAR_REGISTRY[config.species] ?? CHAR_REGISTRY.specter;
                     const frames =
                       charReg[a.mood as keyof typeof charReg] ?? charReg.idle;
                     return (
@@ -1344,8 +1357,8 @@ export default function TamagotchiPage() {
                             palette={charReg.palette}
                             scale={2}
                             fps={sel ? 4 : 2}
-                            outfit={cfg.outfit}
-                            accessory={cfg.accessory}
+                            outfit={config.outfit}
+                            accessory={config.accessory}
                           />
                         </div>
                         <div>
@@ -1393,7 +1406,7 @@ export default function TamagotchiPage() {
                       click to place
                     </div>
                     <PositionGrid
-                      value={cfg.position}
+                      value={config.position}
                       onChange={set("position")}
                     />
                   </div>
@@ -1415,12 +1428,12 @@ export default function TamagotchiPage() {
                           marginBottom: "0.25rem",
                         }}
                       >
-                        {POS_ICONS[cfg.position]}{" "}
-                        {cfg.position.replace(/-/g, " ")}
+                        {POS_ICONS[config.position]}{" "}
+                        {config.position.replace(/-/g, " ")}
                       </div>
                       <div style={{ fontSize: "0.62rem", color: C.muted }}>
-                        Companion anchored {cfg.position.replace(/-/g, " ")} of
-                        canvas
+                        Companion anchored {config.position.replace(/-/g, " ")}{" "}
+                        of canvas
                       </div>
                     </div>
                     <div
@@ -1439,9 +1452,8 @@ export default function TamagotchiPage() {
               </>
             )}
 
-            {tab === 6 && (
-              <ScreenReorder screens={screens} onChange={setScreens} />
-            )}
+            {/* SCREENS */}
+            {tab === 6 && <ScreenReorder />}
           </Card>
         </div>
 
@@ -1467,7 +1479,7 @@ export default function TamagotchiPage() {
               <Label>Live preview</Label>
               <Pill color={C.purple}>800 × 480</Pill>
             </div>
-            <FramePreview cfg={cfg} />
+            <FramePreview cfg={config} />
             <div
               style={{
                 marginTop: "0.85rem",
@@ -1480,21 +1492,24 @@ export default function TamagotchiPage() {
               }}
             >
               {[
-                ["Species", SPECIES.find((s) => s.id === cfg.species)?.label],
+                [
+                  "Species",
+                  SPECIES.find((s) => s.id === config.species)?.label,
+                ],
                 [
                   "Background",
-                  BACKGROUNDS.find((b) => b.id === cfg.background)?.label,
+                  BACKGROUNDS.find((b) => b.id === config.background)?.label,
                 ],
-                ["Outfit", OUTFITS.find((o) => o.id === cfg.outfit)?.label],
+                ["Outfit", OUTFITS.find((o) => o.id === config.outfit)?.label],
                 [
                   "Accessory",
-                  ACCESSORIES.find((a) => a.id === cfg.accessory)?.label,
+                  ACCESSORIES.find((a) => a.id === config.accessory)?.label,
                 ],
                 [
                   "Animation",
-                  ANIMATIONS.find((a) => a.id === cfg.animation)?.label,
+                  ANIMATIONS.find((a) => a.id === config.animation)?.label,
                 ],
-                ["Position", cfg.position.replace(/-/g, " ")],
+                ["Position", config.position.replace(/-/g, " ")],
               ].map(([k, v]) => (
                 <div
                   key={k}
@@ -1514,7 +1529,6 @@ export default function TamagotchiPage() {
               ))}
             </div>
           </Card>
-
         </div>
       </div>
     </div>

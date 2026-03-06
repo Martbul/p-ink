@@ -127,11 +127,11 @@ const (
 type TamagotchiMood string
 
 const (
-	MoodHappy   TamagotchiMood = "happy"
-	MoodNeutral TamagotchiMood = "neutral"
-	MoodSad     TamagotchiMood = "sad"
+	MoodHappy    TamagotchiMood = "happy"
+	MoodNeutral  TamagotchiMood = "neutral"
+	MoodSad      TamagotchiMood = "sad"
 	MoodSleeping TamagotchiMood = "sleeping"
-	MoodExcited TamagotchiMood = "excited"
+	MoodExcited  TamagotchiMood = "excited"
 )
 
 type Tamagotchi struct {
@@ -139,6 +139,9 @@ type Tamagotchi struct {
 	CoupleID     uuid.UUID         `json:"couple_id"`
 	OwnerID      uuid.UUID         `json:"owner_id"`
 	ControllerID uuid.UUID         `json:"controller_id"`
+	Background   string            `json:"background"`
+	Animation    string            `json:"animation"`
+	Position     string            `json:"position"`
 	Name         string            `json:"name"`
 	Species      TamagotchiSpecies `json:"species"`
 	Health       int               `json:"health"`
@@ -194,8 +197,8 @@ const (
 )
 
 type TamagotchiEquipped struct {
-	TamagotchiID uuid.UUID    `json:"tamagotchi_id"`
-	Slot         EquippedSlot `json:"slot"`
+	TamagotchiID uuid.UUID      `json:"tamagotchi_id"`
+	Slot         EquippedSlot   `json:"slot"`
 	Item         TamagotchiItem `json:"item"`
 }
 
@@ -228,10 +231,10 @@ type TamagotchiEvent struct {
 // Combines tamagotchi + inventory + equipped in one payload.
 
 type TamagotchiState struct {
-	Tamagotchi *Tamagotchi              `json:"tamagotchi"`
-	Equipped   []TamagotchiEquipped     `json:"equipped"`
-	Inventory  []TamagotchiInventoryEntry `json:"inventory"`
-	RecentEvents []TamagotchiEvent      `json:"recent_events"`
+	Tamagotchi   *Tamagotchi                `json:"tamagotchi"`
+	Equipped     []TamagotchiEquipped       `json:"equipped"`
+	Inventory    []TamagotchiInventoryEntry `json:"inventory"`
+	RecentEvents []TamagotchiEvent          `json:"recent_events"`
 }
 
 // ─── Frame Tamagotchi (embedded in PollResponse) ──────────────────────────────

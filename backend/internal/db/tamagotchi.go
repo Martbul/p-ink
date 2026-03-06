@@ -601,11 +601,14 @@ func moodFromHealth(health, maxHealth int) models.TamagotchiMood {
 	}
 }
 
+
 func scanTamagotchi(row pgx.Row) (*models.Tamagotchi, error) {
 	var t models.Tamagotchi
 	err := row.Scan(
 		&t.ID, &t.CoupleID, &t.OwnerID, &t.ControllerID,
-		&t.Name, &t.Species, &t.Health, &t.MaxHealth,
+		&t.Name, &t.Species,
+		&t.Background, &t.Animation, &t.Position, // ← new
+		&t.Health, &t.MaxHealth,
 		&t.XP, &t.Level, &t.Mood, &t.LastFedAt, &t.CreatedAt,
 	)
 	if err == pgx.ErrNoRows {
@@ -616,6 +619,7 @@ func scanTamagotchi(row pgx.Row) (*models.Tamagotchi, error) {
 	}
 	return &t, nil
 }
+
 
 func scanItems(rows pgx.Rows) ([]*models.TamagotchiItem, error) {
 	var out []*models.TamagotchiItem

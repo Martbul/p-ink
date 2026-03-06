@@ -47,7 +47,7 @@ func main() {
 		store = &storage.NoopStore{}
 	} else {
 		store = cldStore
-		log.Println("✓ cloudinary connected")
+		log.Println("cloudinary connected")
 	}
 
 	r := mux.NewRouter()
@@ -89,7 +89,6 @@ func main() {
 		Methods(http.MethodPost)
 	protected.HandleFunc("/api/devices/me", api.GetMyDevice(pool)).
 		Methods(http.MethodGet)
-	// Returns both devices in the couple (for settings / status display).
 	protected.HandleFunc("/api/devices/couple", api.GetCoupleDevices(pool)).
 		Methods(http.MethodGet)
 
@@ -106,6 +105,8 @@ func main() {
 		Methods(http.MethodPost)
 	protected.HandleFunc("/api/notifications/subscriptions", api.GetPushSubscriptions(pool)).
 		Methods(http.MethodGet)
+	protected.HandleFunc("/api/tamagotchi/appearance",
+		api.UpdateAppearance(pool)).Methods(http.MethodPatch)
 
 	protected.HandleFunc("/api/tamagotchi/mine", api.GetMyTamagotchi(pool)).Methods(http.MethodGet)
 	protected.HandleFunc("/api/tamagotchi/partner", api.GetPartnerTamagotchi(pool)).Methods(http.MethodGet)

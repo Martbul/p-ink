@@ -15,7 +15,7 @@
 import { useState, useEffect } from "react";
 import { useClerk, useAuth } from "@clerk/nextjs";
 import { useUser } from "@/providers/UserProvider";
-import { api } from "@/api";
+import { api } from "@/api/api";
 import { cn } from "@/lib/utils";
 
 const polySmall = "polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)";

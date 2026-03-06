@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Instrument_Sans } from "next/font/google";
+import { Cormorant_Garamond, Instrument_Sans, Syne } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { UserProvider } from "@/providers/UserProvider";
-import { Syne } from "next/font/google";
+import { TamagotchiProvider } from "@/providers/TamagotchiProvider";
 import "../styles/globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -50,7 +50,11 @@ export default function RootLayout({
     >
       <body className="font-body antialiased bg-cream text-ink font-[400] selection:bg-rose/20 selection:text-deep">
         <ClerkProvider>
-          <UserProvider>{children}</UserProvider>
+          <UserProvider>
+            <TamagotchiProvider>
+              {children}
+            </TamagotchiProvider>
+          </UserProvider>
         </ClerkProvider>
       </body>
     </html>
