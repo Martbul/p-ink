@@ -83,8 +83,6 @@ func main() {
 	protected.HandleFunc("/api/couples/join", api.JoinCouple(pool)).
 		Methods(http.MethodPost)
 
-	// Device routes.
-	// Design: one device per user — a couple therefore has two devices total.
 	protected.HandleFunc("/api/devices/pair", api.PairDevice(pool)).
 		Methods(http.MethodPost)
 	protected.HandleFunc("/api/devices/me", api.GetMyDevice(pool)).
@@ -115,6 +113,23 @@ func main() {
 	protected.HandleFunc("/api/tamagotchi/shop/buy", api.BuyItem(pool)).Methods(http.MethodPost)
 	protected.HandleFunc("/api/tamagotchi/equip", api.EquipItem(pool)).Methods(http.MethodPost)
 	protected.HandleFunc("/api/tamagotchi/events", api.GetEvents(pool)).Methods(http.MethodGet)
+
+	protected.HandleFunc("/api/pixel-avatar/mine", api.GetMyPixelAvatar(pool)).Methods(http.MethodGet)
+	protected.HandleFunc("/api/pixel-avatar", api.UpsertMyPixelAvatar(pool)).Methods(http.MethodPut)
+	protected.HandleFunc("/api/pixel-avatar/partner", api.GetPartnerPixelAvatar(pool)).Methods(http.MethodGet)
+
+	protected.HandleFunc("/api/slideshow", api.GetMySlideshow(pool)).Methods(http.MethodGet)
+	protected.HandleFunc("/api/slideshow", api.UpsertSlideshowSettings(pool)).Methods(http.MethodPut)
+	protected.HandleFunc("/api/slideshow/active", api.SetSlideshowActive(pool)).Methods(http.MethodPatch)
+	protected.HandleFunc("/api/slideshow/advance", api.AdvanceSlide(pool)).Methods(http.MethodPost)
+
+	protected.HandleFunc("/api/slideshow/slides", api.UploadSlide(pool, store)).Methods(http.MethodPost)
+	protected.HandleFunc("/api/slideshow/slides/reorder", api.ReorderSlides(pool)).Methods(http.MethodPut)
+	protected.HandleFunc("/api/slideshow/slides/{id}", api.UpdateSlide(pool)).Methods(http.MethodPatch)
+	protected.HandleFunc("/api/slideshow/slides/{id}", api.DeleteSlide(pool)).Methods(http.MethodDelete)
+
+	protected.HandleFunc("/api/slideshow/slides/{id}/react", api.ReactToSlide(pool)).Methods(http.MethodPost)
+	protected.HandleFunc("/api/slideshow/slides/{id}/react", api.DeleteReaction(pool)).Methods(http.MethodDelete)
 
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {

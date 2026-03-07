@@ -12,16 +12,17 @@ import (
 )
 
 type PollResponse struct {
-	ImageURL       string                  `json:"image_url"`
-	ImageHash      string                  `json:"image_hash"`
-	PollIntervalMs uint32                  `json:"poll_interval_ms"`
-	OTAUrl         string                  `json:"ota_url"`
-	OTAVersion     string                  `json:"ota_version"`
-	Paired         bool                    `json:"paired"`
-	Tamagotchi     *models.FrameTamagotchi `json:"tamagotchi,omitempty"`
+	ImageURL       string                   `json:"image_url"`
+	ImageHash      string                   `json:"image_hash"`
+	PollIntervalMs uint32                   `json:"poll_interval_ms"`
+	OTAUrl         string                   `json:"ota_url"`
+	OTAVersion     string                   `json:"ota_version"`
+	Paired         bool                     `json:"paired"`
+	Tamagotchi     *models.FrameTamagotchi  `json:"tamagotchi,omitempty"`
+	PartnerAvatar  *models.FramePixelAvatar `json:"partner_avatar,omitempty"`
+	Slideshow      *models.FrameSlideshow   `json:"slideshow,omitempty"`
 }
 
-// FramePoll  POST /api/frame/poll  — no user auth, MAC-based
 func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
 	const op = errs.Op("api.FramePoll")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +84,19 @@ func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
 
 		if ft, err := db.GetFrameTamagotchi(r.Context(), pool, device.OwnerID); err == nil && ft != nil {
 			resp.Tamagotchi = ft
+		}
+
+		if pa, err := db.GetPartnerPixelAvatarByOwner(r.Context(), pool, device.OwnerID); err == nil && pa != nil {
+			resp.PartnerAvatar = &models.FramePixelAvatar{
+				Pixels:  pa.Pixels,
+				Palette: pa.Palette,
+				Width:   pa.Width,
+				Height:  pa.Height,
+			}
+		}
+
+		if fs, err := db.GetFrameSlideshow(r.Context(), pool, device.OwnerID); err == nil && fs != nil {
+			resp.Slideshow = fs
 		}
 
 		OK(w, resp)

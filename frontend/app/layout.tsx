@@ -28,7 +28,7 @@ const instrument = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "p-ink — Stay close across any distance",
+  title: "P-ink",
   description:
     "A shared e-ink frame that keeps long-distance couples connected through daily prompts and photos.",
   openGraph: {
