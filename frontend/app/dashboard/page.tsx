@@ -754,7 +754,7 @@ function SlideshowWidget() {
           }}
         >
           <Film size={12} />
-          Open Slideshow Editor //
+          Slideshow Editor
         </Link>
       </div>
     </div>
