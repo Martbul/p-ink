@@ -1,18 +1,8 @@
--- ─── 006_slideshows.sql ──────────────────────────────────────────────────────
--- Slideshow feature: one slideshow config per user, N ordered slides.
--- Slides reference uploaded images (Cloudinary URLs) stored directly here,
--- not in the content table — slideshows are a separate delivery channel.
-
 CREATE TABLE IF NOT EXISTS slideshows (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id          UUID        NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
 
-    -- identity
     name             TEXT        NOT NULL DEFAULT 'My Slideshow',
-
-    -- playback mode
-    -- sequential = 1→2→3→1  |  shuffle = random permutation, no repeat until all shown
-    -- random = fully random picks  |  loop-one = repeat the active slide forever
     mode             TEXT        NOT NULL DEFAULT 'sequential'
                                  CHECK (mode IN ('sequential','shuffle','random','loop-one')),
 
@@ -46,7 +36,6 @@ CREATE TABLE IF NOT EXISTS slideshows (
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ─── Slides ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS slideshow_slides (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     slideshow_id  UUID        NOT NULL REFERENCES slideshows(id) ON DELETE CASCADE,
@@ -60,9 +49,6 @@ CREATE TABLE IF NOT EXISTS slideshow_slides (
     UNIQUE (slideshow_id, position)
 );
 
--- ─── Reactions ────────────────────────────────────────────────────────────────
--- Partner can react to a slide (heart, wow, laugh …).
--- Used for manual_advance mode AND as a cute engagement stat.
 CREATE TABLE IF NOT EXISTS slideshow_reactions (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     slide_id     UUID        NOT NULL REFERENCES slideshow_slides(id) ON DELETE CASCADE,

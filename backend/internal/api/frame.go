@@ -1,5 +1,6 @@
 package api
 
+
 import (
 	"encoding/json"
 	"net/http"
@@ -21,6 +22,7 @@ type PollResponse struct {
 	Tamagotchi     *models.FrameTamagotchi  `json:"tamagotchi,omitempty"`
 	PartnerAvatar  *models.FramePixelAvatar `json:"partner_avatar,omitempty"`
 	Slideshow      *models.FrameSlideshow   `json:"slideshow,omitempty"`
+	PartnerLocation *models.FrameLocation `json:"partner_location,omitempty"`
 }
 
 func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
@@ -95,8 +97,13 @@ func FramePoll(pool *pgxpool.Pool) http.HandlerFunc {
 			}
 		}
 
-		if fs, err := db.GetFrameSlideshow(r.Context(), pool, device.OwnerID); err == nil && fs != nil {
-			resp.Slideshow = fs
+		if slideshow, err := db.GetFrameSlideshow(r.Context(), pool, device.OwnerID); err == nil && slideshow != nil {
+			resp.Slideshow = slideshow
+		}
+
+		// Populate partner's live location (nil = not sharing, frame ignores it)
+		if loc, err := db.GetPartnerLocationShare(r.Context(), pool, device.OwnerID); err == nil && loc != nil {
+			resp.PartnerLocation = loc
 		}
 
 		OK(w, resp)

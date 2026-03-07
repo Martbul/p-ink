@@ -1,11 +1,8 @@
 BEGIN;
 
--- Rename the unique index (old name: one_device_per_user)
 DROP INDEX IF EXISTS one_device_per_user;
 CREATE UNIQUE INDEX IF NOT EXISTS one_device_per_owner ON devices (owner_id);
 
--- Refresh the view so it joins owner info and works for multi-device couples.
--- We must DROP the view first because the column order/names have changed.
 DROP VIEW IF EXISTS device_display;
 
 CREATE VIEW device_display AS

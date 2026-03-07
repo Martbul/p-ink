@@ -131,6 +131,18 @@ func main() {
 	protected.HandleFunc("/api/slideshow/slides/{id}/react", api.ReactToSlide(pool)).Methods(http.MethodPost)
 	protected.HandleFunc("/api/slideshow/slides/{id}/react", api.DeleteReaction(pool)).Methods(http.MethodDelete)
 
+	protected.HandleFunc("/api/devices/me", api.UnpairDevice(pool)).
+		Methods(http.MethodDelete)
+
+	protected.HandleFunc("/api/couples/me", api.DissolveCouple(pool)).
+		Methods(http.MethodDelete)
+
+	protected.HandleFunc("/api/location/share", api.ShareLocation(pool)).
+		Methods(http.MethodPost)
+
+	protected.HandleFunc("/api/location/share", api.StopSharingLocation(pool)).
+		Methods(http.MethodDelete)
+
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "http://localhost:7777"

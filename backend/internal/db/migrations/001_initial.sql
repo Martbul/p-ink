@@ -1,6 +1,3 @@
--- Migration: 001_initial
--- Run with: psql $DATABASE_URL -f migrations/001_initial.sql
-
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

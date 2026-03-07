@@ -406,8 +406,9 @@ export function InfoModal({
   return createPortal(modal, document.body);
 }
 
-// ─── Hook: useModal ───────────────────────────────────────────────────────────
-type ModalConfig = Omit<InfoModalProps, "open" | "onClose">;
+type ModalConfig = Omit<InfoModalProps, "open" | "onClose"> & {
+  onClose?: () => void;
+};
 
 export function useModal() {
   const [state, setState] = useState<{ open: boolean; config: ModalConfig }>({
